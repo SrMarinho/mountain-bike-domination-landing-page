@@ -18,7 +18,7 @@
         <div
           v-for="(component, index) in components"
           :key="index"
-          class="w-full flex flex-col gap-3 rounded-xl bg-black-light-2/50 p-6 outline-gray-600 outline-2 outline-solid duration-300"
+          class="w-full flex flex-col gap-3 rounded-xl bg-black-light-2/50 p-6 outline-gray-600 outline-2 outline-solid duration-300 hover:outline-gray-300"
           :class="{
             'bg-primary/15 outline-primary text-primary ': currentComponent == index,
           }"
@@ -28,14 +28,20 @@
           <p class="text-sm">{{ component.description }}</p>
         </div>
       </div>
-      <div class="w-full rounded-xl bg-black-light-2/50 p-6 border-solid border-gray-600 border-1">
-        <p class="text-xl font-bold text-primary">
+      <div
+        class="w-full rounded-xl bg-black-light-2/50 p-6 border-solid border-gray-600 border-1 flex flex-col gap-2"
+      >
+        <p class="text-2xl font-bold text-primary mb-2">
           {{ `${components[currentComponent].title} Specs` }}
         </p>
-        <g class="" v-for="(spec, index) in components[currentComponent].specs" :key="index">
-          <span class="w-2 h-2 rounded-full bg-green-400"></span>
+        <div
+          class="flex items-center gap-4"
+          v-for="(spec, index) in components[currentComponent].specs"
+          :key="index"
+        >
+          <img class="w-2 h-2 rounded-full bg-green-400" />
           <p>{{ spec }}</p>
-        </g>
+        </div>
       </div>
       <div class="w-full rounded-xl bg-black-light-2/50 p-6 border-solid border-gray-600 border-1">
         <p class="font-bold text-xl">Performace Matric</p>
