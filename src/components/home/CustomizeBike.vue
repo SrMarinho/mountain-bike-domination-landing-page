@@ -29,7 +29,7 @@
         </div>
       </div>
       <div
-        class="w-full rounded-xl bg-black-light-2/50 p-6 border-solid border-gray-600 border-1 flex flex-col gap-2"
+        class="w-full rounded-xl bg-black-light-2/50 p-6 border-solid border-gray-600 border-1 flex flex-col gap-2 mb-4"
       >
         <p class="text-2xl font-bold text-primary mb-2">
           {{ `${components[currentComponent].title} Specs` }}
@@ -43,23 +43,29 @@
           <p>{{ spec }}</p>
         </div>
       </div>
-      <div class="w-full rounded-xl bg-black-light-2/50 p-6 border-solid border-gray-600 border-1">
-        <p class="font-bold text-xl">Performace Matric</p>
-        <div>
-          <div>
+      <div
+        class="w-full rounded-xl bg-black-light-2/50 p-6 border-solid border-gray-600 border-1 flex flex-col gap-6"
+      >
+        <p class="font-bold text-2xl">Performace Matric</p>
+        <div class="flex flex-col gap-6 text-gray-300">
+          <div class="w-full flex justify-between">
             <span>Weight</span>
-            <span>16.2</span>
+            <span class="text-primary font-bold">16.2 kg</span>
           </div>
-          <div>
+          <div class="w-full flex justify-between">
             <span>Travel</span>
-            <span>200mm / 200mm</span>
+            <span class="text-green-400 font-bold">200mm / 200mm</span>
           </div>
-          <div>
+          <div class="w-full flex justify-between">
             <span>Max Speed</span>
-            <span>80+ km/h</span>
+            <span class="text-orange-400 font-bold">80+ km/h</span>
           </div>
         </div>
-        <button class="w-full bg-gradient-to-r from-cyan-400 to-green-400">BUILD THIS SETUP</button>
+        <button
+          class="w-full rounded-xl py-2.5 font-bold bg-gradient-to-r from-cyan-600 to-green-600"
+        >
+          BUILD THIS SETUP
+        </button>
       </div>
     </div>
   </div>
