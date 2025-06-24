@@ -56,8 +56,18 @@
         Expert
       </button>
     </div>
-    <div class="gap-8 grid md:grid-cols-2 lg:grid-cols-3 justify-center items-center">
-      <TrailCard v-for="(trail, index) in trailFiltered" :key="index" :trail="trail" />
+    <div class="relative transition-all duration-500">
+      <TransitionGroup
+        name="fade"
+        tag="div"
+        class="gap-8 grid md:grid-cols-2 lg:grid-cols-3 justify-center items-center"
+        enter-active-class="transition duration-300 ease-out"
+        enter-from-class="transform opacity-0 translate-y-4"
+        leave-active-class="transition duration-200 ease-in absolute"
+        leave-to-class="transform opacity-0 -translate-y-4"
+      >
+        <TrailCard v-for="(trail, index) in trailFiltered" :key="trail.id" :trail="trail" />
+      </TransitionGroup>
     </div>
   </div>
 </template>
@@ -70,6 +80,7 @@ import TrailCard from '../ui/TrailCard.vue'
 
 const trailsList: Trail[] = [
   {
+    id: 0,
     image: '/trail/1.jpg',
     title: "Beginner's Luck",
     description: 'Perfect starter trail with gentle slopes and scenic views',
@@ -79,6 +90,7 @@ const trailsList: Trail[] = [
   },
 
   {
+    id: 1,
     image: '/trail/2.jpg',
     title: 'Forest Flow',
     description: 'Smooth singletrack through dense pine forest',
@@ -88,6 +100,7 @@ const trailsList: Trail[] = [
   },
 
   {
+    id: 2,
     image: '/trail/3.jpg',
     title: 'Adrenaline Rush',
     description: 'Technical features with jumps and bermed corners',
@@ -97,6 +110,7 @@ const trailsList: Trail[] = [
   },
 
   {
+    id: 3,
     image: '/trail/4.jpg',
     title: 'Ridge Runner',
     description: 'Exposed ridgeline with breathtaking mountain views',
@@ -106,6 +120,7 @@ const trailsList: Trail[] = [
   },
 
   {
+    id: 4,
     image: '/trail/5.jpg',
     title: 'Death Wish',
     description: 'Extreme terrain with rock gardens and steep drops',
@@ -115,6 +130,7 @@ const trailsList: Trail[] = [
   },
 
   {
+    id: 5,
     image: '/trail/6.jpg',
     title: 'The Gauntlet',
     description: 'Technical alpine descent for experienced riders only',
