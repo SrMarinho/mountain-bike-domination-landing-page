@@ -66,7 +66,7 @@
         leave-active-class="transition duration-200 ease-in absolute"
         leave-to-class="transform opacity-0 -translate-y-4"
       >
-        <TrailCard v-for="(trail, index) in trailFiltered" :key="trail.id" :trail="trail" />
+        <TrailCard v-for="trail in trailFiltered" :key="trail.id" :trail="trail" />
       </TransitionGroup>
     </div>
   </div>
