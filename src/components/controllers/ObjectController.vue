@@ -1,7 +1,6 @@
 <template>
   <div
     class="w-4/12 h-6/12 p-1 flex flex-col gap-1 justify-around items-center absolute top-4 right-4 z-[999] bg-gray-400/20 resize rounded-xl text-white"
-    :v-if="isOpen"
   >
     <!-- Scene -->
     <div class="w-full flex-1 bg-black/30">
@@ -121,6 +120,7 @@
 
     <div
       class="absolute w-6 h-6 bg-white top-0 right-0 rounded-full text-black flex justify-center items-center"
+      @click="() => (isOpen = !isOpen)"
     >
       X
     </div>
@@ -137,7 +137,7 @@ const props = defineProps<{
   }
 }>()
 
-const isOpen = ref<boolean>(true)
+const isOpen = ref<boolean>(false)
 
 const objSelected = ref<number | null>(null)
 const selectedObject = computed(() => {
