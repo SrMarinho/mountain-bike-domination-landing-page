@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full h-screen bg-gradient-to-b from-black-light-2 to-black flex items-center">
+  <div class="w-full h-screen flex items-center">
     <div class="flex flex-col text-white px-10 gap-8 max-w-4xl">
       <h1 class="flex flex-col text-6xl md:text-8xl font-bold">
         <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-green-400"
@@ -41,15 +41,76 @@
         </div>
       </div>
     </div>
+
     <ChevronDownIcon
       class="w-6 absolute left-6/12 bottom-0 -translate-x-6/12 -translate-y-8 text-cyan-400 brightness-200"
     />
+
+    <canvas id="myCanvas" class="absolute w-full h-screen -z-50" />
+
+    <ObjectController :scene="sceneManeger" />
   </div>
 </template>
 
 <script setup lang="ts">
-// import { BeakerIcon } from '@heroicons/vue/24/solid'
+import { onMounted } from 'vue'
+import * as THREE from 'three'
 import { PlayIcon, ChevronDownIcon } from '@heroicons/vue/24/outline'
+import { Engine3d } from '@/libs/threejs/core/engine3d'
+import { Bike3D } from '@/libs/threejs/objects/bike'
+import { Terrain1 } from '@/libs/threejs/objects/terrain1'
+import ObjectController from '../controllers/ObjectController.vue'
+import { useSceneManager } from '@/composables/sceneManager'
+
+const sceneManeger = useSceneManager()
+
+async function main(): Promise<void> {
+  const canvas: HTMLElement | null = document.querySelector('#myCanvas')
+
+  if (!canvas) {
+    throw new Error('Canvas não encontrado')
+  }
+
+  const renderer = new THREE.WebGLRenderer({ canvas: canvas })
+  renderer.setSize(canvas.clientWidth, canvas.clientHeight)
+  const camera = new THREE.PerspectiveCamera(
+    90,
+    canvas.clientWidth / canvas.clientHeight,
+    0.1,
+    1000,
+  )
+
+  const engine = new Engine3d(canvas, sceneManeger.scene, renderer, camera)
+
+  engine.start()
+
+  camera.position.z = 1
+
+  const loader = new THREE.TextureLoader()
+  const bgTexture = loader.load('trail1.webp')
+  bgTexture.colorSpace = THREE.SRGBColorSpace
+  // scene.background = bgTexture
+
+  const color = 0xffffff
+  const intensity = 1
+  const light = new THREE.AmbientLight(color, intensity)
+  sceneManeger.add(light)
+
+  const bike = new Bike3D()
+  bike.loadModel().then((model: THREE.Group) => {
+    sceneManeger.add(model)
+  })
+
+  const terrain1 = new Terrain1()
+
+  terrain1.loadModel().then((model: THREE.Group) => {
+    model.position.x = 3
+    model.position.y = -4
+    sceneManeger.add(model)
+  })
+}
+
+onMounted(main)
 </script>
 
 <style scoped></style>

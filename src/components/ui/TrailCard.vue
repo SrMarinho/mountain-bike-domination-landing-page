@@ -1,6 +1,11 @@
 <template>
   <div
-    class="group h-full grow bg-black/40 rounded-xl text-white overflow-hidden backdrop-blur-sm transform hover:scale-105 hover:-translate-y-2 transition-all duration-500 hover:shadow-2xl hover:shadow-cyan-500/25"
+    class="group h-full grow bg-gray-400/40 rounded-xl text-white overflow-hidden backdrop-blur-sm transform hover:scale-105 hover:-translate-y-2 transition-all duration-500 hover:shadow-2xl hover:shadow-cyan-500/25"
+    :class="{
+      'bg-green-400/10': trail.difficulty === TrailDifficulty.Beginner,
+      'bg-yellow-400/10': trail.difficulty === TrailDifficulty.Intermediate,
+      'bg-red-400/10': trail.difficulty === TrailDifficulty.Expert,
+    }"
   >
     <div class="w-full h-48 bg-black overflow-clip">
       <img
@@ -9,7 +14,7 @@
         alt="Trail image example"
       />
     </div>
-    <div class="p-8 flex flex-col justify-around gap-6">
+    <div class="p-8 flex flex-col justify-around gap-4">
       <h3 class="w-full font-bold text-2xl">{{ trail.title }}</h3>
       <p class="w-full text-gray-300">{{ trail.description }}</p>
       <div class="flex gap-2 text-sm text-gray-400">

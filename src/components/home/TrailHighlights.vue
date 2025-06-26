@@ -1,8 +1,8 @@
 <!-- eslint-disable prefer-const -->
 <template>
-  <div class="container mx-auto px-6">
-    <!-- Title -->
-    <div class="text-center my-14">
+  <div class="container mx-auto">
+    <div class="text-center mb-12">
+      <!-- Title -->
       <h2
         class="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-green-400 mb-6"
       >
@@ -12,62 +12,62 @@
         Discover our most epic trails, each offering unique challenges and breathtaking scenery
       </p>
     </div>
-  </div>
-  <!-- Trails -->
-  <div class="w-full gap-12 flex flex-col justify-center items-center">
-    <!-- Trail filter -->
-    <div class="w-fit py-2 px-2 bg-black-light rounded-lg font-medium">
-      <button
-        class="px-6 py-3 hover:bg-white/10 hover:text-white rounded-md duration-200"
-        :class="!trailFilterSelected ? 'text-black bg-white' : 'text-white'"
-        @click="() => (trailFilterSelected = null)"
-      >
-        All Trails
-      </button>
-      <button
-        class="px-6 py-3 hover:bg-green-400/10 hover:text-green-400 rounded-md duration-200"
-        :class="
-          trailFilterSelected == TrailDifficulty.Beginner
-            ? 'text-black bg-green-400'
-            : 'text-green-400'
-        "
-        @click="setTrailFilter(TrailDifficulty.Beginner)"
-      >
-        Beginner
-      </button>
-      <button
-        class="px-6 py-3 hover:text-yellow-400 hover:bg-yellow-400/10 rounded-md duration-200"
-        :class="
-          trailFilterSelected == TrailDifficulty.Intermediate
-            ? 'text-black bg-yellow-400'
-            : 'text-yellow-400'
-        "
-        @click="setTrailFilter(TrailDifficulty.Intermediate)"
-      >
-        Intermediate
-      </button>
-      <button
-        class="px-6 py-3 hover:text-red-400 hover:bg-red-400/10 rounded-md duration-200"
-        :class="
-          trailFilterSelected == TrailDifficulty.Expert ? 'text-black bg-red-400' : 'text-red-400'
-        "
-        @click="setTrailFilter(TrailDifficulty.Expert)"
-      >
-        Expert
-      </button>
-    </div>
-    <div class="relative transition-all duration-500">
-      <TransitionGroup
-        name="fade"
-        tag="div"
-        class="gap-8 grid md:grid-cols-2 lg:grid-cols-3 justify-center items-center"
-        enter-active-class="transition duration-300 ease-out"
-        enter-from-class="transform opacity-0 translate-y-4"
-        leave-active-class="transition duration-200 ease-in absolute"
-        leave-to-class="transform opacity-0 -translate-y-4"
-      >
-        <TrailCard v-for="trail in trailFiltered" :key="trail.id" :trail="trail" />
-      </TransitionGroup>
+    <!-- Trails -->
+    <div class="w-full gap-12 flex flex-col justify-center items-center">
+      <!-- Trail filter -->
+      <div class="w-fit flex flex-nowrap py-2 px-2 bg-black-light rounded-lg font-medium">
+        <button
+          class="px-6 py-3 hover:bg-white/10 hover:text-white rounded-md duration-200"
+          :class="!trailFilterSelected ? 'text-black bg-white' : 'text-white'"
+          @click="() => (trailFilterSelected = null)"
+        >
+          All Trails
+        </button>
+        <button
+          class="px-6 py-3 hover:bg-green-400/10 hover:text-green-400 rounded-md duration-200"
+          :class="
+            trailFilterSelected == TrailDifficulty.Beginner
+              ? 'text-black bg-green-400'
+              : 'text-green-400'
+          "
+          @click="setTrailFilter(TrailDifficulty.Beginner)"
+        >
+          Beginner
+        </button>
+        <button
+          class="px-6 py-3 hover:text-yellow-400 hover:bg-yellow-400/10 rounded-md duration-200"
+          :class="
+            trailFilterSelected == TrailDifficulty.Intermediate
+              ? 'text-black bg-yellow-400'
+              : 'text-yellow-400'
+          "
+          @click="setTrailFilter(TrailDifficulty.Intermediate)"
+        >
+          Intermediate
+        </button>
+        <button
+          class="px-6 py-3 hover:text-red-400 hover:bg-red-400/10 rounded-md duration-200"
+          :class="
+            trailFilterSelected == TrailDifficulty.Expert ? 'text-black bg-red-400' : 'text-red-400'
+          "
+          @click="setTrailFilter(TrailDifficulty.Expert)"
+        >
+          Expert
+        </button>
+      </div>
+      <div class="relative transition-all duration-500">
+        <TransitionGroup
+          name="fade"
+          tag="div"
+          class="w-full gap-8 grid md:grid-cols-2 lg:grid-cols-3 justify-around items-center"
+          enter-active-class="transition duration-300 ease-out"
+          enter-from-class="transform opacity-0 translate-y-4"
+          leave-active-class="transition duration-200 ease-in absolute"
+          leave-to-class="transform opacity-0 -translate-y-4"
+        >
+          <TrailCard v-for="trail in trailFiltered" :key="trail.id" :trail="trail" />
+        </TransitionGroup>
+      </div>
     </div>
   </div>
 </template>
