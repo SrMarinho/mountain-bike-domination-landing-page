@@ -94,29 +94,50 @@ async function main(): Promise<void> {
   bgTexture.colorSpace = THREE.SRGBColorSpace
   // sceneManeger.scene.background = bgTexture
 
-  const color = 0xffffff
-  const intensity = 1
+  const color = 0x404040
+  const intensity: number = 0.5
   const light = new THREE.AmbientLight(color, intensity)
   sceneManeger.add(light)
 
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5)
+  const directionalLight = new THREE.DirectionalLight(0xfff4e6, 1.2)
+  directionalLight.position.set(999, 999, 999)
+  directionalLight.castShadow = true
+  directionalLight.shadow.mapSize.width = 2048
+  directionalLight.shadow.mapSize.height = 2048
   sceneManeger.scene.add(directionalLight)
 
+  const fillLight = new THREE.DirectionalLight(0xe6f4ff, 0.4)
+  fillLight.position.set(2, 1, 3) // Posição mais central
+  sceneManeger.add(fillLight)
+
+  const rimLight = new THREE.SpotLight(0x00aaff, 3, 10, Math.PI * 0.1)
+  rimLight.position.set(-0.08, 2.38, -1.06)
+  rimLight.penumbra = 0.5
+  rimLight.decay = 2
+  sceneManeger.add(rimLight)
+  gui.add(rimLight.position, 'x', -10, 10)
+  gui.add(rimLight.position, 'y', 0, 10)
+  gui.add(rimLight.position, 'z', -10, 10)
+
   const bike = new Bike3D()
-  bike.loadModel().then((model: THREE.Group) => {
+  bike.loadModel().then((model: THREE.Object3D) => {
     // model.position.set(0.9, -0.09, 0.2)
     // model.rotation.set(0, -2.7, 0)
 
     model.position.set(0.9, -0.09, 0.2)
     model.rotation.set(0, -2.7, -0.2)
+
+    rimLight.target = model
+    sceneManeger.add(rimLight.target)
+
     sceneManeger.add(model)
   })
 
   // gui.addColor(new ColorGUIHelper(light, 'color'), 'value').name('color')
   // gui.add(light, 'intensity', 0, 5, 0.01)
-  // gui.add(light.target.position, 'x', -10, 10)
-  // gui.add(light.target.position, 'z', -10, 10)
-  // gui.add(light.target.position, 'y', 0, 10)
+  // gui.add(rimLight.target.position, 'x', -10, 10)
+  // gui.add(rimLight.target.position, 'z', -10, 10)
+  // gui.add(rimLight.target.position, 'y', 0, 10)
 }
 
 onMounted(main)
