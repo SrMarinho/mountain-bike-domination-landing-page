@@ -1,126 +1,139 @@
 <template>
   <div
-    class="w-4/12 h-6/12 p-1 flex flex-col gap-1 justify-around items-center absolute top-4 right-4 z-[999] bg-gray-400/20 resize rounded-xl text-white"
+    class="fixed top-4 right-4 z-[999] bg-gray-400/20 overflow-clip"
+    :class="{
+      'w-6 h-6': !isOpen,
+      'w-3/12 h-6/12  rounded-xl': isOpen,
+    }"
   >
-    <!-- Scene -->
-    <div class="w-full flex-1 bg-black/30">
-      <ul v-if="scene">
-        <li
-          v-for="(child, index) in scene.children.value"
-          :key="index"
-          class="w-full hover:bg-gray-800 px-1 py-0.5"
-          :class="{
-            'bg-blue-700': objSelected == index,
-          }"
-          @click="() => (objSelected = index)"
-        >
-          {{ child.name }}
-        </li>
-      </ul>
-    </div>
-    <!-- Obj Properties -->
-    <div class="grid grid-cols-3 gap-2 justify-around resize bg-black/30">
-      <div class="flex flex-col gap-1">
-        <label class="flex text-nowrap gap-2"
-          >P. X
-          <input
-            type="number"
-            v-model.number="position.x"
-            @input="updatePosition"
-            class="w-full bg-black/80 rounded-sm"
-            value="0"
-            step="0.1"
-        /></label>
-        <label class="flex text-nowrap gap-2"
-          >P. Y
-          <input
-            type="number"
-            v-model.number="position.y"
-            @input="updatePosition"
-            class="w-full bg-black/80 rounded-sm"
-            value="0"
-            step="0.1"
-        /></label>
-        <label class="flex text-nowrap gap-2"
-          >P. Z
-          <input
-            type="number"
-            v-model.number="position.z"
-            @input="updatePosition"
-            class="w-full bg-black/80 rounded-sm"
-            value="0"
-            step="0.1"
-        /></label>
+    <div
+      class="w-full h-full p-1 flex flex-col flex-1 gap-1 justify-around items-center text-white duration-200 transition-all"
+      v-if="isOpen"
+    >
+      <!-- Scene -->
+      <div class="w-full flex-1 bg-black/30">
+        <ul v-if="scene">
+          <li
+            v-for="(child, index) in scene.children.value"
+            :key="index"
+            class="w-full hover:bg-gray-800 px-1 py-0.5"
+            :class="{
+              'bg-blue-700': objSelected == index,
+            }"
+            @click="() => (objSelected = index)"
+          >
+            {{ child.name }}
+          </li>
+        </ul>
       </div>
-      <div class="flex flex-col gap-1">
-        <label class="flex text-nowrap gap-2"
-          >S. X
-          <input
-            type="number"
-            v-model.number="scale.x"
-            @input="updateScale"
-            class="w-full bg-black/80 rounded-sm"
-            value="1"
-            step="0.1"
-        /></label>
-        <label class="flex text-nowrap gap-2"
-          >S. Y
-          <input
-            type="number"
-            v-model.number="scale.y"
-            @input="updateScale"
-            class="w-full bg-black/80 rounded-sm"
-            value="1"
-            step="0.1"
-        /></label>
-        <label class="flex text-nowrap gap-2"
-          >S. Z
-          <input
-            type="number"
-            v-model.number="scale.z"
-            @input="updateScale"
-            class="w-full bg-black/80 rounded-sm"
-            value="1"
-            step="0.1"
-        /></label>
-      </div>
-      <div class="flex flex-col gap-1">
-        <label class="flex text-nowrap gap-2"
-          >R. X
-          <input
-            type="number"
-            v-model.number="rotation.x"
-            @input="updateRotation"
-            class="w-full bg-black/80 rounded-sm"
-            value="0"
-            step="0.1"
-        /></label>
-        <label class="flex text-nowrap gap-2"
-          >R. Y
-          <input
-            type="number"
-            v-model.number="rotation.y"
-            @input="updateRotation"
-            class="w-full bg-black/80 rounded-sm"
-            value="0"
-            step="0.1"
-        /></label>
-        <label class="flex text-nowrap gap-2"
-          >R. Z
-          <input
-            type="number"
-            v-model.number="rotation.z"
-            @input="updateRotation"
-            class="w-full bg-black/80 rounded-sm"
-            value="0"
-            step="0.1"
-        /></label>
+      <!-- Obj Properties -->
+      <div class="grid grid-cols-3 gap-2 justify-around resize bg-black/30">
+        <div class="flex flex-col gap-1">
+          <label class="flex text-nowrap gap-2"
+            >P. X
+            <input
+              type="number"
+              v-model.number="position.x"
+              @input="updatePosition"
+              class="w-full bg-black/80 rounded-sm"
+              value="0"
+              step="0.1"
+          /></label>
+          <label class="flex text-nowrap gap-2"
+            >P. Y
+            <input
+              type="number"
+              v-model.number="position.y"
+              @input="updatePosition"
+              class="w-full bg-black/80 rounded-sm"
+              value="0"
+              step="0.1"
+          /></label>
+          <label class="flex text-nowrap gap-2"
+            >P. Z
+            <input
+              type="number"
+              v-model.number="position.z"
+              @input="updatePosition"
+              class="w-full bg-black/80 rounded-sm"
+              value="0"
+              step="0.1"
+          /></label>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="flex text-nowrap gap-2"
+            >S. X
+            <input
+              type="number"
+              v-model.number="scale.x"
+              @input="updateScale"
+              class="w-full bg-black/80 rounded-sm"
+              value="1"
+              step="0.1"
+          /></label>
+          <label class="flex text-nowrap gap-2"
+            >S. Y
+            <input
+              type="number"
+              v-model.number="scale.y"
+              @input="updateScale"
+              class="w-full bg-black/80 rounded-sm"
+              value="1"
+              step="0.1"
+          /></label>
+          <label class="flex text-nowrap gap-2"
+            >S. Z
+            <input
+              type="number"
+              v-model.number="scale.z"
+              @input="updateScale"
+              class="w-full bg-black/80 rounded-sm"
+              value="1"
+              step="0.1"
+          /></label>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="flex text-nowrap gap-2"
+            >R. X
+            <input
+              type="number"
+              v-model.number="rotation.x"
+              @input="updateRotation"
+              class="w-full bg-black/80 rounded-sm"
+              value="0"
+              step="0.1"
+          /></label>
+          <label class="flex text-nowrap gap-2"
+            >R. Y
+            <input
+              type="number"
+              v-model.number="rotation.y"
+              @input="updateRotation"
+              class="w-full bg-black/80 rounded-sm"
+              value="0"
+              step="0.1"
+          /></label>
+          <label class="flex text-nowrap gap-2"
+            >R. Z
+            <input
+              type="number"
+              v-model.number="rotation.z"
+              @input="updateRotation"
+              class="w-full bg-black/80 rounded-sm"
+              value="0"
+              step="0.1"
+          /></label>
+        </div>
       </div>
     </div>
 
     <div
-      class="absolute w-6 h-6 bg-white top-0 right-0 rounded-full text-black flex justify-center items-center"
-      @click="() => (isOpen = !isOpen)"
+      class="absolute w-6 h-6 bg-white top-0 right-0 rounded-full text-black flex justify-center items-center select-none"
+      @click="
+        () => {
+          isOpen = !isOpen
+        }
+      "
     >
       X
     </div>

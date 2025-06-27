@@ -46,9 +46,10 @@
       class="w-6 absolute left-6/12 bottom-0 -translate-x-6/12 -translate-y-8 text-cyan-400 brightness-200"
     />
 
-    <canvas id="myCanvas" class="absolute w-full h-screen -z-50" />
-
-    <ObjectController :scene="sceneManeger" />
+    <canvas
+      id="myCanvas"
+      class="absolute w-full h-screen -z-50 bg-gradient-to-b from-black to-gray-900"
+    />
   </div>
 </template>
 
@@ -58,9 +59,8 @@ import * as THREE from 'three'
 import { PlayIcon, ChevronDownIcon } from '@heroicons/vue/24/outline'
 import { Engine3d } from '@/libs/threejs/core/engine3d'
 import { Bike3D } from '@/libs/threejs/objects/bike'
-import { Terrain1 } from '@/libs/threejs/objects/terrain1'
-import ObjectController from '../controllers/ObjectController.vue'
 import { useSceneManager } from '@/composables/sceneManager'
+import { GUI } from 'three/addons/libs/lil-gui.module.min.js'
 
 const sceneManeger = useSceneManager()
 
@@ -71,7 +71,8 @@ async function main(): Promise<void> {
     throw new Error('Canvas não encontrado')
   }
 
-  const renderer = new THREE.WebGLRenderer({ canvas: canvas })
+  const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true })
+  renderer.setClearColor(0x000000, 0)
   renderer.setSize(canvas.clientWidth, canvas.clientHeight)
   const camera = new THREE.PerspectiveCamera(
     90,
@@ -84,30 +85,38 @@ async function main(): Promise<void> {
 
   engine.start()
 
+  const gui = new GUI()
+
   camera.position.z = 1
 
   const loader = new THREE.TextureLoader()
-  const bgTexture = loader.load('trail1.webp')
+  const bgTexture = loader.load('sky_sunset.jpg')
   bgTexture.colorSpace = THREE.SRGBColorSpace
-  // scene.background = bgTexture
+  // sceneManeger.scene.background = bgTexture
 
   const color = 0xffffff
   const intensity = 1
   const light = new THREE.AmbientLight(color, intensity)
   sceneManeger.add(light)
 
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5)
+  sceneManeger.scene.add(directionalLight)
+
   const bike = new Bike3D()
   bike.loadModel().then((model: THREE.Group) => {
+    // model.position.set(0.9, -0.09, 0.2)
+    // model.rotation.set(0, -2.7, 0)
+
+    model.position.set(0.9, -0.09, 0.2)
+    model.rotation.set(0, -2.7, -0.2)
     sceneManeger.add(model)
   })
 
-  const terrain1 = new Terrain1()
-
-  terrain1.loadModel().then((model: THREE.Group) => {
-    model.position.x = 3
-    model.position.y = -4
-    sceneManeger.add(model)
-  })
+  // gui.addColor(new ColorGUIHelper(light, 'color'), 'value').name('color')
+  // gui.add(light, 'intensity', 0, 5, 0.01)
+  // gui.add(light.target.position, 'x', -10, 10)
+  // gui.add(light.target.position, 'z', -10, 10)
+  // gui.add(light.target.position, 'y', 0, 10)
 }
 
 onMounted(main)
