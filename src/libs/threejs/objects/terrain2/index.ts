@@ -9,10 +9,10 @@ export class Terrain2 {
   async loadModel(): Promise<THREE.Group> {
     const loader = new GLTFLoader()
 
-    const gltf = await loader.loadAsync('/rock_terrain_2.glb')
+    const gltf = await loader.loadAsync('/cliff.glb')
 
     this.model = gltf.scene
-    this.model.name = 'rock_terrain_2'
+    this.model.name = 'cliff'
     return this.model
   }
 }

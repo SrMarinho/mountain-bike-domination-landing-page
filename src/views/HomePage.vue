@@ -1,5 +1,8 @@
 <template>
-  <HeroSection />
+  <section class="">
+    <HeroSection />
+  </section>
+
   <section class="p-6 bg-gradient-to-b from-black to-gray-900 py-20">
     <CustomizeBike />
   </section>

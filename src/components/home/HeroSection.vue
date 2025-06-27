@@ -1,6 +1,8 @@
 <template>
   <div class="w-full h-screen flex items-center">
-    <div class="flex flex-col text-white px-10 gap-8 max-w-4xl">
+    <div
+      class="h-screen flex flex-col justify-center text-white px-10 gap-8 max-w-4xl bg-gradient-to-r from-black to-transparent"
+    >
       <h1 class="flex flex-col text-6xl md:text-8xl font-bold">
         <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-green-400"
           >DOWNHILL</span
@@ -48,8 +50,9 @@
 
     <canvas
       id="myCanvas"
-      class="absolute w-full h-screen -z-50 bg-gradient-to-b from-black to-gray-900"
+      class="absolute w-full h-screen -z-50 bg-gradient-to-b from-cyan-500 to-white"
     />
+    <ObjectController :scene="sceneManeger" />
   </div>
 </template>
 
@@ -61,6 +64,8 @@ import { Engine3d } from '@/libs/threejs/core/engine3d'
 import { Bike3D } from '@/libs/threejs/objects/bike'
 import { useSceneManager } from '@/composables/sceneManager'
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js'
+import { Terrain2 } from '@/libs/threejs/objects/terrain2'
+import ObjectController from '../controllers/ObjectController.vue'
 
 const sceneManeger = useSceneManager()
 
@@ -129,6 +134,15 @@ async function main(): Promise<void> {
 
     rimLight.target = model
     sceneManeger.add(rimLight.target)
+
+    sceneManeger.add(model)
+  })
+
+  const t2 = new Terrain2()
+  t2.loadModel().then((model: THREE.Object3D) => {
+    model.position.set(-1.4, -4.4, 0)
+    model.scale.set(0.5, 0.5, 0.5)
+    // model.rotation.set(0, -2.7, -0.2)
 
     sceneManeger.add(model)
   })
