@@ -66,6 +66,9 @@ import { useSceneManager } from '@/composables/sceneManager'
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js'
 import { Terrain2 } from '@/libs/threejs/objects/terrain2'
 import ObjectController from '../controllers/ObjectController.vue'
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 
 const sceneManeger = useSceneManager()
 
@@ -80,68 +83,83 @@ async function main(): Promise<void> {
   renderer.setClearColor(0x000000, 0)
   renderer.setSize(canvas.clientWidth, canvas.clientHeight)
   const camera = new THREE.PerspectiveCamera(
-    90,
+    45,
     canvas.clientWidth / canvas.clientHeight,
     0.1,
     1000,
   )
+  camera.position.set(-0.398, 1.231, 2.385)
+  camera.rotation.set(0.3, 0.0, 0.0)
 
-  const engine = new Engine3d(canvas, sceneManeger.scene, renderer, camera)
+  const composer = new EffectComposer(renderer)
+  composer.addPass(new RenderPass(sceneManeger.scene, camera))
+  const bloomPass = new UnrealBloomPass(
+    new THREE.Vector2(window.innerWidth, window.innerHeight),
+    1.5, // Strength (força do brilho)
+    0.4, // Radius (raio do brilho)
+    0.15, // Threshold (limiar de luminosidade)
+  )
+  composer.addPass(bloomPass)
+
+  const engine = new Engine3d(canvas, sceneManeger.scene, renderer, camera, composer)
 
   engine.start()
 
   const gui = new GUI()
 
-  camera.position.z = 1
-
   const loader = new THREE.TextureLoader()
-  const bgTexture = loader.load('sky_sunset.jpg')
+  const bgTexture = loader.load('landscape1.jpg')
   bgTexture.colorSpace = THREE.SRGBColorSpace
-  // sceneManeger.scene.background = bgTexture
+  sceneManeger.scene.background = bgTexture
 
   const color = 0x404040
   const intensity: number = 0.5
   const light = new THREE.AmbientLight(color, intensity)
   sceneManeger.add(light)
 
-  const directionalLight = new THREE.DirectionalLight(0xfff4e6, 1.2)
-  directionalLight.position.set(999, 999, 999)
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.3)
+  directionalLight.position.set(20, 20, 20)
   directionalLight.castShadow = true
   directionalLight.shadow.mapSize.width = 2048
   directionalLight.shadow.mapSize.height = 2048
   sceneManeger.scene.add(directionalLight)
+  const folder1 = gui.addFolder('Directional Light')
+  folder1.add(directionalLight, 'intensity', 0, 5)
 
-  const fillLight = new THREE.DirectionalLight(0xe6f4ff, 0.4)
-  fillLight.position.set(2, 1, 3) // Posição mais central
-  sceneManeger.add(fillLight)
-
-  const rimLight = new THREE.SpotLight(0x00aaff, 3, 10, Math.PI * 0.1)
-  rimLight.position.set(-0.08, 2.38, -1.06)
+  const rimLight = new THREE.SpotLight(0xffc9a9, 3, 10, Math.PI * 0.1)
+  rimLight.position.set(0.866, 3.611, -1.18)
+  rimLight.intensity = 20
   rimLight.penumbra = 0.5
   rimLight.decay = 2
   sceneManeger.add(rimLight)
-  gui.add(rimLight.position, 'x', -10, 10)
-  gui.add(rimLight.position, 'y', 0, 10)
-  gui.add(rimLight.position, 'z', -10, 10)
+
+  const rimLight2 = new THREE.SpotLight(0xc4ffa9, 3, 10, Math.PI * 0.1)
+  rimLight2.position.set(-0.5, 1.87, 0)
+  rimLight.intensity = 20
+  rimLight2.penumbra = 0.5
+  rimLight2.decay = 2
+  sceneManeger.add(rimLight2)
 
   const bike = new Bike3D()
   bike.loadModel().then((model: THREE.Object3D) => {
     // model.position.set(0.9, -0.09, 0.2)
     // model.rotation.set(0, -2.7, 0)
 
-    model.position.set(0.9, -0.09, 0.2)
-    model.rotation.set(0, -2.7, -0.2)
+    model.position.set(0.601, 1.87, -0.016)
+    model.rotation.set(0, 3.6, 0)
 
     rimLight.target = model
     sceneManeger.add(rimLight.target)
 
+    rimLight2.target = model
+    sceneManeger.add(rimLight2.target)
     sceneManeger.add(model)
   })
 
   const t2 = new Terrain2()
   t2.loadModel().then((model: THREE.Object3D) => {
-    model.position.set(-1.4, -4.4, 0)
-    model.scale.set(0.5, 0.5, 0.5)
+    model.position.set(0, 0.532, 0)
+    model.scale.set(0.1, 0.1, 0.1)
     // model.rotation.set(0, -2.7, -0.2)
 
     sceneManeger.add(model)

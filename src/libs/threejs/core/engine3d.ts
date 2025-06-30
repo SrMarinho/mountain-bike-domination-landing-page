@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
 
 export class Engine3d {
   constructor(
@@ -6,6 +7,7 @@ export class Engine3d {
     public scene: THREE.Scene,
     public renderer: THREE.WebGLRenderer,
     public camera: THREE.Camera,
+    public composer?: EffectComposer | null,
   ) {
     this.loop = this.loop.bind(this)
   }
@@ -17,7 +19,12 @@ export class Engine3d {
   private loop(): void {
     // this.resizeRendererToDisplaySize(this.renderer)
     this.update()
-    this.renderer.render(this.scene, this.camera)
+    if (this.composer) {
+      this.composer.render()
+    } else {
+      this.renderer.render(this.scene, this.camera)
+    }
+
     requestAnimationFrame(this.loop)
   }
 
