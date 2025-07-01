@@ -116,6 +116,7 @@ async function initScene() {
     engine.start()
 
     gui = new GUI()
+    onUnmounted(() => gui.destroy())
 
     // Carregamento assíncrono de assets
     await loadAssets(gui)
@@ -126,8 +127,6 @@ async function initScene() {
 
     cameraAnimation(camera)
     // gui.hide()
-
-    onUnmounted(() => gui.destroy())
   } catch (error) {
     console.error('Erro ao inicializar cena:', error)
     isLoading.value = false
@@ -331,11 +330,40 @@ function setupGuiControls(name: string, gui: GUI, object: THREE.Object3D) {
   folder.add(object.rotation, 'z', -10, 10).name('Rotação Z')
 }
 
-async function cameraAnimation(camera: THREE.Camera) {
+async function cameraAnimation(camera: THREE.PerspectiveCamera) {
   gsap.to(camera.position, {
     z: 2.385,
     duration: 1,
     ease: 'power4.inOut',
+  })
+
+  gsap.to(camera.rotation, {
+    z: Math.PI,
+    duration: 1,
+    ease: 'power4.inOut',
+    delay: 0.1, // substitui o stagger quando são dois tweens separados
+    onUpdate: () => {
+      camera.updateProjectionMatrix()
+      controls.update()
+    },
+  })
+
+  gsap.from(camera, {
+    fov: 35,
+    onUpdate: () => {
+      camera.updateProjectionMatrix()
+      controls.update()
+    },
+  })
+
+  gsap.to(camera, {
+    fov: 45,
+    duration: 1,
+    ease: 'power2.inOut',
+    onUpdate: () => {
+      camera.updateProjectionMatrix()
+      controls.update()
+    },
   })
 }
 
