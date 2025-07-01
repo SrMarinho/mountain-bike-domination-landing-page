@@ -55,7 +55,7 @@
     />
 
     <canvas id="myCanvas" class="absolute w-full h-screen -z-50 bg-black" />
-    <ObjectController :scene="sceneManager" />
+    <ObjectController class="z-50" :scene="sceneManager" />
   </div>
 </template>
 
@@ -82,6 +82,8 @@ let renderer: THREE.WebGLRenderer
 let camera: THREE.PerspectiveCamera
 let composer: EffectComposer
 let controls: OrbitControls
+
+let gui: GUI
 
 // Configurações
 const sceneConfig = {
@@ -110,7 +112,7 @@ async function initScene() {
 
     engine.start()
 
-    const gui = new GUI()
+    gui = new GUI()
 
     // Carregamento assíncrono de assets
     await loadAssets(gui)
@@ -118,7 +120,7 @@ async function initScene() {
     // Finalização
     isLoading.value = false
     loadingProgress.value = 100
-    gui.hide()
+    // gui.hide()
 
     onUnmounted(() => gui.destroy())
   } catch (error) {
@@ -240,9 +242,8 @@ async function loadAssets(gui: GUI) {
         curvedPlane.position.set(0, 4.6, -4.02)
         curvedPlane.rotation.set(0.26, 0, 0)
         curvedPlane.scale.set(3, 3, 3)
-        sceneManager.add(curvedPlane)
+        // sceneManager.add(curvedPlane)
 
-        setupGuiControls(gui, curvedPlane)
         loadingProgress.value += progressIncrement
         resolve()
       })
@@ -270,9 +271,27 @@ function setupLights() {
   mainLight.name = 'main_light'
   sceneManager.add(mainLight)
 
-  // Luzes adicionais
-  const rimLight = createRimLight(0xffc9a9, new THREE.Vector3(0.866, 3.611, -1.18), 20)
-  const rimLight2 = createRimLight(0xffffff, new THREE.Vector3(-0.5, 1.87, 0), 20)
+  const rimLight = new THREE.SpotLight(0xffc9a9, 20, 4, Math.PI * 0.14)
+  rimLight.position.set(0.866, 3.611, -1.18)
+  const objTarget = new THREE.Object3D()
+  objTarget.position.set(0, 0, 1)
+  rimLight.target = objTarget
+  rimLight.penumbra = 0.5
+  rimLight.decay = 2
+  rimLight.castShadow = true
+
+  const rimLight2 = new THREE.SpotLight(0xffffff, 20, 6, Math.PI * 0.05)
+  rimLight2.position.set(0, 1.5, -3)
+  const objTarget2 = new THREE.Object3D()
+  objTarget2.position.set(0, 1.5, 1)
+  rimLight2.target = objTarget2
+  rimLight2.penumbra = 0.5
+  rimLight2.decay = 2
+  rimLight2.castShadow = true
+
+  const lightHelper = new THREE.SpotLightHelper(rimLight2)
+  // sceneManager.add(lightHelper)
+  setupGuiControls('rimLight', gui, rimLight2)
 
   sceneManager.add(rimLight)
   sceneManager.add(rimLight2)
@@ -288,8 +307,8 @@ function createRimLight(color: number, position: THREE.Vector3, intensity: numbe
 }
 
 // Controles GUI
-function setupGuiControls(gui: GUI, object: THREE.Object3D) {
-  const folder = gui.addFolder('Plano Curvo')
+function setupGuiControls(name: string, gui: GUI, object: THREE.Object3D) {
+  const folder = gui.addFolder(name)
   folder.add(object.scale, 'x', 0, 100).name('Escala X')
   folder.add(object.scale, 'y', 0, 100).name('Escala Y')
   folder.add(object.scale, 'z', 0, 100).name('Escala Z')
