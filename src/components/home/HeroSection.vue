@@ -71,6 +71,7 @@ import { Engine3d } from '@/libs/threejs/core/engine3d'
 import { Bike3D } from '@/libs/threejs/objects/bike'
 import { Terrain2 } from '@/libs/threejs/objects/terrain2'
 import { useSceneManager } from '@/composables/sceneManager'
+import gsap from 'gsap'
 
 // Estados reativos
 const isLoading = ref(true)
@@ -85,10 +86,12 @@ let controls: OrbitControls
 
 let gui: GUI
 
+let mainLight: THREE.SpotLight
+
 // Configurações
 const sceneConfig = {
   canvasId: 'myCanvas',
-  cameraPosition: new THREE.Vector3(-0.398, 1.231, 2.385),
+  cameraPosition: new THREE.Vector3(-0.398, 1.231, 4),
   bloomParams: {
     strength: 1.5,
     radius: 0.5,
@@ -120,6 +123,8 @@ async function initScene() {
     // Finalização
     isLoading.value = false
     loadingProgress.value = 100
+
+    cameraAnimation(camera)
     // gui.hide()
 
     onUnmounted(() => gui.destroy())
@@ -198,12 +203,17 @@ async function loadAssets(gui: GUI) {
   // Bike
   const bike = new Bike3D()
   loadPromises.push(
-    bike.loadModel().then((model) => {
+    bike.loadModel().then((model: THREE.Object3D) => {
       model.position.set(0.3, 1.87, -0.016)
       model.rotation.set(0, 3.6, 0)
       model.castShadow = true
       controls.target.set(model.position.x - 1, model.position.y, model.position.z)
       sceneManager.add(model)
+      const objTarget = new THREE.Object3D()
+      objTarget.position.set(0, 2, 1)
+      mainLight.target = objTarget
+      console.log(mainLight)
+
       loadingProgress.value += progressIncrement
     }),
   )
@@ -263,13 +273,22 @@ function setupLights() {
   sceneManager.add(ambientLight)
 
   // Luz principal
-  const mainLight = new THREE.SpotLight(0xffffff, 10, 0, Math.PI * 0.022)
-  mainLight.position.set(10, 10, 10)
+  mainLight = new THREE.SpotLight(0xffffff, 10, 0, Math.PI * 0.08)
+  mainLight.position.set(3, -5.8, 3)
   mainLight.penumbra = 0.5
   mainLight.decay = 1
   mainLight.castShadow = true
   mainLight.name = 'main_light'
   sceneManager.add(mainLight)
+
+  const mainLightTarget = new THREE.Object3D()
+  mainLightTarget.position.set(1.2, 2, 1)
+  mainLight.target = mainLightTarget
+
+  const mainLghtHelper = new THREE.SpotLightHelper(mainLight)
+  // sceneManager.scene.add(mainLghtHelper)
+
+  setupGuiControls('mainLght', gui, mainLight)
 
   const rimLight = new THREE.SpotLight(0xffc9a9, 20, 4, Math.PI * 0.14)
   rimLight.position.set(0.866, 3.611, -1.18)
@@ -291,19 +310,9 @@ function setupLights() {
 
   const lightHelper = new THREE.SpotLightHelper(rimLight2)
   // sceneManager.add(lightHelper)
-  setupGuiControls('rimLight', gui, rimLight2)
 
   sceneManager.add(rimLight)
   sceneManager.add(rimLight2)
-}
-
-function createRimLight(color: number, position: THREE.Vector3, intensity: number) {
-  const light = new THREE.SpotLight(color, intensity, 10, Math.PI * 0.1)
-  light.position.copy(position)
-  light.penumbra = 0.5
-  light.decay = 2
-  light.castShadow = true
-  return light
 }
 
 // Controles GUI
@@ -320,6 +329,14 @@ function setupGuiControls(name: string, gui: GUI, object: THREE.Object3D) {
   folder.add(object.rotation, 'x', -10, 10).name('Rotação X')
   folder.add(object.rotation, 'y', -10, 10).name('Rotação Y')
   folder.add(object.rotation, 'z', -10, 10).name('Rotação Z')
+}
+
+async function cameraAnimation(camera: THREE.Camera) {
+  gsap.to(camera.position, {
+    z: 2.385,
+    duration: 1,
+    ease: 'power4.inOut',
+  })
 }
 
 onMounted(initScene)
