@@ -91,7 +91,10 @@ let mainLight: THREE.SpotLight
 // Configurações
 const sceneConfig = {
   canvasId: 'myCanvas',
-  cameraPosition: new THREE.Vector3(-0.398, 1.231, 4),
+  camera: {
+    position: new THREE.Vector3(-0.398, 1.231, 1.7),
+    fov: 60,
+  },
   bloomParams: {
     strength: 1.5,
     radius: 0.5,
@@ -126,6 +129,10 @@ async function initScene() {
     loadingProgress.value = 100
 
     cameraAnimation(camera)
+
+    document.addEventListener('mousemove', (e) => {
+      mouseHandler(e, canvas!, controls)
+    })
     // gui.hide()
   } catch (error) {
     console.error('Erro ao inicializar cena:', error)
@@ -151,9 +158,14 @@ function setupBaseScene() {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
   // Câmera
-  camera = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientHeight, 0.1, 1000)
+  camera = new THREE.PerspectiveCamera(
+    sceneConfig.camera.fov,
+    canvas.clientWidth / canvas.clientHeight,
+    0.1,
+    1000,
+  )
   camera.name = 'camera'
-  camera.position.copy(sceneConfig.cameraPosition)
+  camera.position.copy(sceneConfig.camera.position)
   sceneManager.add(camera)
 
   // Efeitos pós-processamento
@@ -176,6 +188,7 @@ function setupBaseScene() {
   controls.screenSpacePanning = false
   controls.maxPolarAngle = Math.PI
   controls.target.copy(sceneConfig.controlsTarget)
+  // controls.autoRotate = true
 
   return { renderer, camera, composer, controls }
 }
@@ -211,8 +224,6 @@ async function loadAssets(gui: GUI) {
       const objTarget = new THREE.Object3D()
       objTarget.position.set(0, 2, 1)
       mainLight.target = objTarget
-      console.log(mainLight)
-
       loadingProgress.value += progressIncrement
     }),
   )
@@ -287,7 +298,7 @@ function setupLights() {
   const mainLghtHelper = new THREE.SpotLightHelper(mainLight)
   // sceneManager.scene.add(mainLghtHelper)
 
-  setupGuiControls('mainLght', gui, mainLight)
+  // setupGuiControls('mainLght', gui, mainLight)
 
   const rimLight = new THREE.SpotLight(0xffc9a9, 20, 4, Math.PI * 0.14)
   rimLight.position.set(0.866, 3.611, -1.18)
@@ -331,11 +342,11 @@ function setupGuiControls(name: string, gui: GUI, object: THREE.Object3D) {
 }
 
 async function cameraAnimation(camera: THREE.PerspectiveCamera) {
-  gsap.to(camera.position, {
-    z: 2.385,
-    duration: 1,
-    ease: 'power4.inOut',
-  })
+  // gsap.to(camera.position, {
+  //   z: 100,
+  //   duration: 0.01,
+  //   ease: 'power4.inOut',
+  // })
 
   gsap.to(camera.rotation, {
     z: Math.PI,
@@ -348,23 +359,34 @@ async function cameraAnimation(camera: THREE.PerspectiveCamera) {
     },
   })
 
-  gsap.from(camera, {
-    fov: 35,
-    onUpdate: () => {
-      camera.updateProjectionMatrix()
-      controls.update()
-    },
-  })
+  // gsap.from(camera, {
+  //   fov: 35,
+  //   onUpdate: () => {
+  //     camera.updateProjectionMatrix()
+  //     controls.update()
+  //   },
+  // })
 
-  gsap.to(camera, {
-    fov: 45,
-    duration: 1,
-    ease: 'power2.inOut',
-    onUpdate: () => {
-      camera.updateProjectionMatrix()
-      controls.update()
-    },
-  })
+  // gsap.to(camera, {
+  //   fov: 5,
+  //   // duration: 1,
+  //   ease: 'power2.inOut',
+  //   onUpdate: () => {
+  //     camera.updateProjectionMatrix()
+  //     controls.update()
+  //   },
+  // })
+}
+
+async function mouseHandler(
+  mouseEvent: MouseEvent,
+  canvas: HTMLCanvasElement,
+  controls: OrbitControls,
+) {
+  console.log(mouseEvent.x, mouseEvent.y)
+  controls.object.position.x = -1 * (mouseEvent.x / canvas.clientWidth)
+
+  controls.object.position.y = -1 * (mouseEvent.y / canvas.clientHeight) + 0.5 + 1.5
 }
 
 onMounted(initScene)
