@@ -60,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
 import * as THREE from 'three'
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js'
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
@@ -76,6 +76,7 @@ import gsap from 'gsap'
 // Estados reativos
 const isLoading = ref(true)
 const loadingProgress = ref(0)
+const gyroscopePermition = ref(false)
 const sceneManager = useSceneManager()
 
 let canvas: HTMLCanvasElement | null
@@ -130,6 +131,13 @@ async function initScene() {
 
     cameraAnimation(camera)
 
+    window.addEventListener(
+      'deviceorientation',
+      (e) => {
+        gyroscopeHandler(e, canvas!, controls)
+      },
+      { passive: true },
+    )
     document.addEventListener('mousemove', (e) => {
       mouseHandler(e, canvas!, controls)
     })
@@ -189,6 +197,12 @@ function setupBaseScene() {
   controls.maxPolarAngle = Math.PI
   controls.target.copy(sceneConfig.controlsTarget)
   // controls.autoRotate = true
+  controls.keys = {
+    LEFT: '',
+    UP: '',
+    BOTTOM: '',
+    RIGHT: '',
+  }
 
   return { renderer, camera, composer, controls }
 }
@@ -279,11 +293,11 @@ async function loadAssets(gui: GUI) {
 // Configuração de luzes
 function setupLights() {
   // Luz ambiente
-  const ambientLight = new THREE.AmbientLight(0x404040, 0.4)
+  const ambientLight = new THREE.AmbientLight(0x404040, 0.1)
   sceneManager.add(ambientLight)
 
   // Luz principal
-  mainLight = new THREE.SpotLight(0xffffff, 10, 0, Math.PI * 0.08)
+  mainLight = new THREE.SpotLight(0xffffff, 2, 0, Math.PI * 0.08)
   mainLight.position.set(3, -5.8, 3)
   mainLight.penumbra = 0.5
   mainLight.decay = 1
@@ -387,10 +401,27 @@ async function mouseHandler(
   canvas: HTMLCanvasElement,
   controls: OrbitControls,
 ) {
-  console.log(mouseEvent.x, mouseEvent.y)
-  controls.object.position.x = -1 * (mouseEvent.x / canvas.clientWidth)
+  controls.object.position.x = -0.5 * (mouseEvent.x / canvas.clientWidth)
 
   controls.object.position.y = -1 * (mouseEvent.y / canvas.clientHeight) + 0.5 + 1.5
+}
+
+function gyroscopeHandler(
+  event: DeviceOrientationEvent,
+  canvas: HTMLCanvasElement,
+  controls: OrbitControls,
+) {
+  console.log(event)
+
+  const update = () => {
+    if (event.beta !== null) {
+      controls.object.position.x = -0.5 * ((event.beta * 10) / canvas.clientWidth)
+    }
+
+    requestAnimationFrame(update)
+  }
+
+  update()
 }
 
 onMounted(initScene)
