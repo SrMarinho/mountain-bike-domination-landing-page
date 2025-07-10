@@ -7,7 +7,7 @@
       Loading: {{ Math.round(loadingProgress) }}%
     </div>
     <div
-      class="h-screen flex flex-col justify-center text-white px-10 gap-8 max-w-4xl bg-gradient-to-r from-black to-transparent"
+      class="h-screen flex flex-col justify-center text-white sm:px-2 md:px-4 lg:px-8 gap-8 max-w-4xl bg-gradient-to-r from-black to-transparent"
     >
       <h1 class="flex flex-col text-6xl md:text-8xl font-bold">
         <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-green-400"
@@ -21,13 +21,13 @@
       </h2>
       <div class="flex gap-4">
         <button
-          class="flex gap-2 bg-cyan-400 py-4 px-8 font-bold text-xl rounded-lg bg-gradient-to-r from-cyan-600 to-green-600 hover:from-cyan-500 hover:to-green-500 hover:shadow-cyan-400/30 hover:shadow-lg duration-200 hover:scale-105"
+          class="flex justify-center items-center gap-2 bg-cyan-400 py-4 px-8 sm:px-2 sm:py-1 font-bold text-xl rounded-lg bg-gradient-to-r from-cyan-600 to-green-600 hover:from-cyan-500 hover:to-green-500 hover:shadow-cyan-400/30 hover:shadow-lg duration-200 hover:scale-105"
         >
           <PlayIcon class="w-6" />
           Watch Demo
         </button>
         <button
-          class="py-4 px-10 text-cyan-400 font-bold text-xl border-cyan-400 border-solid border-2 rounded-lg hover:bg-cyan-400 hover:text-black duration-200 hover:scale-105"
+          class="flex justify-center items-center py-4 px-10 text-cyan-400 font-bold text-xl border-cyan-400 border-solid border-2 rounded-lg hover:bg-cyan-400 hover:text-black duration-200 hover:scale-105"
         >
           Explore trails
         </button>
@@ -138,9 +138,15 @@ async function initScene() {
       },
       { passive: true },
     )
+
     document.addEventListener('mousemove', (e) => {
       mouseHandler(e, canvas!, controls)
     })
+
+    window.addEventListener('resize', (e) => {
+      resizeHandler(canvas!, controls)
+    })
+    resizeHandler(canvas!, controls)
     // gui.hide()
   } catch (error) {
     console.error('Erro ao inicializar cena:', error)
@@ -411,17 +417,43 @@ function gyroscopeHandler(
   canvas: HTMLCanvasElement,
   controls: OrbitControls,
 ) {
-  console.log(event)
-
   const update = () => {
+    if (event.gamma !== null) {
+      controls.object.position.x = -0.5 * ((event.gamma * 10) / canvas.clientWidth)
+    }
+
     if (event.beta !== null) {
-      controls.object.position.x = -0.5 * ((event.beta * 10) / canvas.clientWidth)
+      controls.object.position.y = -1 * ((event.beta * 10) / canvas.clientHeight) + 0.5 + 1.5
     }
 
     requestAnimationFrame(update)
   }
 
   update()
+}
+
+function lerp(x0: number, y0: number, x1: number, y1: number, x: number) {
+  if (x0 === x1) {
+    return y0
+  }
+
+  return y0 + (y1 - y0) * ((x - x0) / (x1 - x0))
+}
+
+async function resizeHandler(canvas: HTMLCanvasElement, controls: OrbitControls): Promise<void> {
+  console.log({ z: controls.object.position.z, width: window.innerWidth })
+  // width 1750 z: 2.5
+  // width 500 x: 0.1
+  // gsap.to(controls.object.position, {
+  //   z: 3,
+  //   duration: 0.8,
+  //   ease: 'power4.out',
+  // })
+  // console.log((controls.target.x += 0.8))
+  // controls.target.x += 0.8
+  // controls.object.position.z = 10
+
+  console.log(controls.object.position)
 }
 
 onMounted(initScene)
