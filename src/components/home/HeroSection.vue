@@ -342,11 +342,15 @@ function setupGuiControls(name: string, gui: GUI, object: THREE.Object3D) {
 }
 
 async function cameraAnimation(camera: THREE.PerspectiveCamera) {
-  // gsap.to(camera.position, {
-  //   z: 100,
-  //   duration: 0.01,
-  //   ease: 'power4.inOut',
-  // })
+  gsap.from(camera.position, {
+    z: 2.5,
+    ease: 'power4.inOut',
+  })
+  gsap.to(camera.position, {
+    z: 1.7,
+    duration: 0.8,
+    ease: 'power4.out',
+  })
 
   gsap.to(camera.rotation, {
     z: Math.PI,
