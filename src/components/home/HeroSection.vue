@@ -139,9 +139,9 @@ async function initScene() {
       { passive: true },
     )
 
-    // document.addEventListener('mousemove', (e) => {
-    //   mouseHandler(e, canvas!, controls)
-    // })
+    document.addEventListener('mousemove', (e) => {
+      mouseHandler(e, canvas!, controls)
+    })
 
     setupGuiControls('camera', gui, camera)
 
