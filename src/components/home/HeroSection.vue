@@ -7,7 +7,7 @@
       Loading: {{ Math.round(loadingProgress) }}%
     </div>
     <div
-      class="h-screen flex flex-col justify-center text-white sm:px-2 md:px-4 lg:px-8 gap-8 max-w-4xl bg-gradient-to-r from-black to-transparent"
+      class="container sm:w-full h-screen flex flex-col justify-center items-center text-white sm:px-0 md:px-4 lg:px-8 gap-8 max-w-4xl bg-gradient-to-r from-black to-transparent"
     >
       <h1 class="flex flex-col text-6xl md:text-8xl font-bold">
         <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-green-400"
@@ -15,7 +15,7 @@
         >
         <span class="text-white">DOMINATION</span>
       </h1>
-      <h2 class="text-2xl text-gray-300">
+      <h2 class="max-w-2xl text-2xl text-gray-300">
         Where skill meets the mountain. Experience the ultimate adrenaline rush as you conquer
         technical trails and defy gravity
       </h2>
@@ -60,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import * as THREE from 'three'
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js'
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
@@ -76,7 +76,6 @@ import gsap from 'gsap'
 // Estados reativos
 const isLoading = ref(true)
 const loadingProgress = ref(0)
-const gyroscopePermition = ref(false)
 const sceneManager = useSceneManager()
 
 let canvas: HTMLCanvasElement | null
@@ -120,6 +119,7 @@ async function initScene() {
     engine.start()
 
     gui = new GUI()
+
     onUnmounted(() => gui.destroy())
 
     // Carregamento assíncrono de assets
@@ -139,14 +139,16 @@ async function initScene() {
       { passive: true },
     )
 
-    document.addEventListener('mousemove', (e) => {
-      mouseHandler(e, canvas!, controls)
-    })
+    // document.addEventListener('mousemove', (e) => {
+    //   mouseHandler(e, canvas!, controls)
+    // })
+
+    setupGuiControls('camera', gui, camera)
 
     window.addEventListener('resize', (e) => {
-      resizeHandler(canvas!, controls)
+      resizeHandler(canvas!, camera, controls)
     })
-    resizeHandler(canvas!, controls)
+    resizeHandler(canvas!, camera, controls)
     // gui.hide()
   } catch (error) {
     console.error('Erro ao inicializar cena:', error)
@@ -318,8 +320,6 @@ function setupLights() {
   const mainLghtHelper = new THREE.SpotLightHelper(mainLight)
   // sceneManager.scene.add(mainLghtHelper)
 
-  // setupGuiControls('mainLght', gui, mainLight)
-
   const rimLight = new THREE.SpotLight(0xffc9a9, 20, 4, Math.PI * 0.14)
   rimLight.position.set(0.866, 3.611, -1.18)
   const objTarget = new THREE.Object3D()
@@ -362,15 +362,15 @@ function setupGuiControls(name: string, gui: GUI, object: THREE.Object3D) {
 }
 
 async function cameraAnimation(camera: THREE.PerspectiveCamera) {
-  gsap.from(camera.position, {
-    z: 2.5,
-    ease: 'power4.inOut',
-  })
-  gsap.to(camera.position, {
-    z: 1.7,
-    duration: 0.8,
-    ease: 'power4.out',
-  })
+  // gsap.from(camera.position, {
+  //   z: 2.5,
+  //   ease: 'power4.inOut',
+  // })
+  // gsap.to(camera.position, {
+  //   z: 1.7,
+  //   duration: 0.8,
+  //   ease: 'power4.out',
+  // })
 
   gsap.to(camera.rotation, {
     z: Math.PI,
@@ -440,20 +440,52 @@ function lerp(x0: number, y0: number, x1: number, y1: number, x: number) {
   return y0 + (y1 - y0) * ((x - x0) / (x1 - x0))
 }
 
-async function resizeHandler(canvas: HTMLCanvasElement, controls: OrbitControls): Promise<void> {
-  console.log({ z: controls.object.position.z, width: window.innerWidth })
-  // width 1750 z: 2.5
+async function resizeHandler(
+  canvas: HTMLCanvasElement,
+  camera: THREE.PerspectiveCamera,
+  controls: OrbitControls,
+): Promise<void> {
+  // width 1670 z: 2.5
   // width 500 x: 0.1
-  // gsap.to(controls.object.position, {
-  //   z: 3,
-  //   duration: 0.8,
-  //   ease: 'power4.out',
-  // })
-  // console.log((controls.target.x += 0.8))
-  // controls.target.x += 0.8
-  // controls.object.position.z = 10
+  /*
+  camera {
+    500: {
+      x: 0.1
+      y: 1.231,
+      z: 4
+    },
+    1670: {
+      x: -0.398,
+      y: 1.231,
+      z: 1.7
+    }
+  }
 
-  console.log(controls.object.position)
+  controls.target {
+    500: {
+      0.1,
+      y: 1.87,
+      z: -0.016
+    },
+    1670: {
+      x: -0.7,
+      y: 1.87,
+      z: -0.016
+    }
+  }
+  */
+  gsap.to(camera.position, {
+    x: lerp(500, 0.1, 1670, -0.7, window.innerWidth),
+    y: 1.231,
+    z: lerp(500, 4, 1670, 1.7, window.innerWidth),
+    duration: 0,
+  })
+  gsap.to(controls.target, {
+    x: lerp(500, 0.1, 1670, -0.7, window.innerWidth),
+    y: 1.87,
+    z: -0.016,
+    duration: 0,
+  })
 }
 
 onMounted(initScene)
