@@ -241,7 +241,7 @@ async function loadAssets(gui: GUI) {
       model.position.set(0.3, 1.87, -0.016)
       model.rotation.set(0, 3.6, 0)
       model.castShadow = true
-      controls.target.set(model.position.x - 1, model.position.y, model.position.z)
+      // controls.target.set(model.position.x - 1, model.position.y, model.position.z)
       sceneManager.add(model)
       const objTarget = new THREE.Object3D()
       objTarget.position.set(0, 2, 1)
@@ -475,13 +475,13 @@ async function resizeHandler(
   }
   */
   gsap.to(camera.position, {
-    x: lerp(500, 0.1, 1670, -0.7, window.innerWidth),
+    x: lerp(500, 0.1, 1670, -0.6, window.innerWidth),
     y: 1.231,
     z: lerp(500, 4, 1670, 1.7, window.innerWidth),
     duration: 0,
   })
   gsap.to(controls.target, {
-    x: lerp(500, 0.1, 1670, -0.7, window.innerWidth),
+    x: lerp(500, 0.1, 1670, -0.5, window.innerWidth),
     y: 1.87,
     z: -0.016,
     duration: 0,
