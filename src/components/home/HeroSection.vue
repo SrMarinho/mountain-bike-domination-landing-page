@@ -145,7 +145,7 @@ async function initScene() {
 
     setupGuiControls('camera', gui, camera)
 
-    window.addEventListener('resize', (e) => {
+    window.addEventListener('resize', () => {
       resizeHandler(canvas!, camera, controls)
     })
     resizeHandler(canvas!, camera, controls)
@@ -239,7 +239,7 @@ async function loadAssets(gui: GUI) {
   loadPromises.push(
     bike.loadModel().then((model: THREE.Object3D) => {
       model.position.set(0.3, 1.87, -0.016)
-      model.rotation.set(0, 3.6, 0)
+      model.rotation.set(-0.1, 3.6, 0)
       model.castShadow = true
       // controls.target.set(model.position.x - 1, model.position.y, model.position.z)
       sceneManager.add(model)
@@ -362,16 +362,6 @@ function setupGuiControls(name: string, gui: GUI, object: THREE.Object3D) {
 }
 
 async function cameraAnimation(camera: THREE.PerspectiveCamera) {
-  // gsap.from(camera.position, {
-  //   z: 2.5,
-  //   ease: 'power4.inOut',
-  // })
-  // gsap.to(camera.position, {
-  //   z: 1.7,
-  //   duration: 0.8,
-  //   ease: 'power4.out',
-  // })
-
   gsap.to(camera.rotation, {
     z: Math.PI,
     duration: 1,
@@ -382,24 +372,6 @@ async function cameraAnimation(camera: THREE.PerspectiveCamera) {
       controls.update()
     },
   })
-
-  // gsap.from(camera, {
-  //   fov: 35,
-  //   onUpdate: () => {
-  //     camera.updateProjectionMatrix()
-  //     controls.update()
-  //   },
-  // })
-
-  // gsap.to(camera, {
-  //   fov: 5,
-  //   // duration: 1,
-  //   ease: 'power2.inOut',
-  //   onUpdate: () => {
-  //     camera.updateProjectionMatrix()
-  //     controls.update()
-  //   },
-  // })
 }
 
 async function mouseHandler(
@@ -407,7 +379,7 @@ async function mouseHandler(
   canvas: HTMLCanvasElement,
   controls: OrbitControls,
 ) {
-  controls.object.position.x = -0.5 * (mouseEvent.x / canvas.clientWidth)
+  controls.object.position.x = lerp(0, -0.5, 1, -1, mouseEvent.x / canvas.clientWidth)
 
   controls.object.position.y = -1 * (mouseEvent.y / canvas.clientHeight) + 0.5 + 1.5
 }
@@ -419,7 +391,7 @@ function gyroscopeHandler(
 ) {
   const update = () => {
     if (event.gamma !== null) {
-      controls.object.position.x = -0.5 * ((event.gamma * 10) / canvas.clientWidth)
+      controls.object.position.x = -0.5 * ((event.gamma * 10) / canvas.clientWidth) * 2
     }
 
     if (event.beta !== null) {
@@ -445,43 +417,15 @@ async function resizeHandler(
   camera: THREE.PerspectiveCamera,
   controls: OrbitControls,
 ): Promise<void> {
-  // width 1670 z: 2.5
-  // width 500 x: 0.1
-  /*
-  camera {
-    500: {
-      x: 0.1
-      y: 1.231,
-      z: 4
-    },
-    1670: {
-      x: -0.398,
-      y: 1.231,
-      z: 1.7
-    }
-  }
-
-  controls.target {
-    500: {
-      0.1,
-      y: 1.87,
-      z: -0.016
-    },
-    1670: {
-      x: -0.7,
-      y: 1.87,
-      z: -0.016
-    }
-  }
-  */
   gsap.to(camera.position, {
-    x: lerp(500, 0.1, 1670, -0.6, window.innerWidth),
+    x: lerp(500, 0.1, 1670, -0.7, window.innerWidth),
     y: 1.231,
-    z: lerp(500, 4, 1670, 1.7, window.innerWidth),
+    z: lerp(500, 2.5, 1670, 1.7, window.innerWidth),
     duration: 0,
   })
+
   gsap.to(controls.target, {
-    x: lerp(500, 0.1, 1670, -0.5, window.innerWidth),
+    x: lerp(500, 0.1, 1670, -0.7, window.innerWidth),
     y: 1.87,
     z: -0.016,
     duration: 0,
