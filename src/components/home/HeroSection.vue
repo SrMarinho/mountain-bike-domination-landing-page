@@ -144,6 +144,7 @@ async function initScene() {
     })
 
     setupGuiControls('camera', gui, camera)
+    gui.show(false)
 
     window.addEventListener('resize', () => {
       resizeHandler(canvas!, camera, controls)
@@ -418,7 +419,7 @@ async function resizeHandler(
   controls: OrbitControls,
 ): Promise<void> {
   gsap.to(camera.position, {
-    x: lerp(500, 0.1, 1670, -0.7, window.innerWidth),
+    x: lerp(500, 0.1, 1670, -0.75, window.innerWidth),
     y: 1.231,
     z: lerp(500, 2.5, 1670, 1.7, window.innerWidth),
     duration: 0,
