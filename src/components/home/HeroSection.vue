@@ -71,6 +71,7 @@ import { Engine3d } from '@/libs/threejs/core/engine3d'
 import { Bike3D } from '@/libs/threejs/objects/bike'
 import { Terrain2 } from '@/libs/threejs/objects/terrain2'
 import { useSceneManager } from '@/composables/sceneManager'
+import { PlayIcon, ChevronDownIcon } from '@heroicons/vue/24/outline'
 import gsap from 'gsap'
 
 // Estados reativos
