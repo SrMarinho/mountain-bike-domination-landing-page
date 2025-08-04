@@ -7,17 +7,16 @@ export class Engine3d {
   private isRunning = false
 
   constructor(
-    public canvas: HTMLCanvasElement, // Tipo mais específico
+    public canvas: HTMLCanvasElement,
     public scene: THREE.Scene,
     public renderer: THREE.WebGLRenderer,
-    public camera: THREE.PerspectiveCamera, // Tipo mais específico
+    public camera: THREE.PerspectiveCamera,
     public composer?: EffectComposer,
     public controls?: OrbitControls,
   ) {
     this.loop = this.loop.bind(this)
     this.handleResize = this.handleResize.bind(this)
 
-    // Configuração inicial
     this.setupEventListeners()
   }
 
