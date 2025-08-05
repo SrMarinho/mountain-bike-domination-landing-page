@@ -55,7 +55,6 @@
     />
 
     <canvas id="myCanvas" class="absolute w-full h-screen -z-50 bg-black" />
-    <ObjectController class="z-50" :scene="sceneManager" />
   </div>
 </template>
 
@@ -63,9 +62,6 @@
 import { onMounted, onUnmounted, ref } from 'vue'
 import * as THREE from 'three'
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js'
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { Engine3d } from '@/libs/threejs/core/engine3d'
 import { Bike3D } from '@/libs/threejs/objects/bike'
@@ -74,7 +70,6 @@ import { useSceneManager } from '@/composables/sceneManager'
 import { PlayIcon, ChevronDownIcon } from '@heroicons/vue/24/outline'
 import gsap from 'gsap'
 
-// Estados reativos
 const isLoading = ref(true)
 const loadingProgress = ref(0)
 const sceneManager = useSceneManager()
@@ -82,7 +77,6 @@ const sceneManager = useSceneManager()
 let canvas: HTMLCanvasElement | null
 let renderer: THREE.WebGLRenderer
 let camera: THREE.PerspectiveCamera
-let composer: EffectComposer
 let controls: OrbitControls
 
 let gui: GUI
@@ -107,15 +101,8 @@ const sceneConfig = {
 // Inicialização principal
 async function initScene() {
   try {
-    const { renderer, camera, composer, controls } = setupBaseScene()
-    const engine = new Engine3d(
-      renderer.domElement,
-      sceneManager.scene,
-      renderer,
-      camera,
-      composer,
-      controls,
-    )
+    const { canvas, renderer, camera } = setupBaseScene()
+    const engine = new Engine3d(canvas, renderer, camera)
 
     engine.start()
 
@@ -186,18 +173,6 @@ function setupBaseScene() {
   camera.position.copy(sceneConfig.camera.position)
   sceneManager.add(camera)
 
-  // Efeitos pós-processamento
-  composer = new EffectComposer(renderer)
-  composer.addPass(new RenderPass(sceneManager.scene, camera))
-
-  const bloomPass = new UnrealBloomPass(
-    new THREE.Vector2(window.innerWidth, window.innerHeight),
-    sceneConfig.bloomParams.strength,
-    sceneConfig.bloomParams.radius,
-    sceneConfig.bloomParams.threshold,
-  )
-  composer.addPass(bloomPass)
-
   // Controles
   controls = new OrbitControls(camera, canvas)
   controls.listenToKeyEvents(window)
@@ -214,7 +189,7 @@ function setupBaseScene() {
     RIGHT: '',
   }
 
-  return { renderer, camera, composer, controls }
+  return { canvas, renderer, camera }
 }
 
 // Carregamento de assets

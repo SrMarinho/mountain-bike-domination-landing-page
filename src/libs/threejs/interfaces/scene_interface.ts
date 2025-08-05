@@ -10,9 +10,13 @@ interface SceneInterface {
   composer: EffectComposer
   objects: Entity[]
 
-  start(): void
+  setup(): void
 
   update(deltaTime: number): void
+
+  render(): void
+
+  dispose(): void
 }
 
 export type { SceneInterface }

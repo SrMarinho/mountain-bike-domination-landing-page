@@ -1,19 +1,19 @@
 import * as THREE from 'three'
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+import type { SceneInterface } from '../interfaces/scene_interface'
 
 export class Engine3d {
+  private clock: THREE.Clock
   private animationFrameId: number | null = null
   private isRunning = false
+  public scene: SceneInterface | null = null
 
   constructor(
     public canvas: HTMLCanvasElement,
-    public scene: THREE.Scene,
     public renderer: THREE.WebGLRenderer,
     public camera: THREE.PerspectiveCamera,
-    public composer?: EffectComposer,
-    public controls?: OrbitControls,
   ) {
+    this.clock = new THREE.Clock()
+    this.scene = null
     this.loop = this.loop.bind(this)
     this.handleResize = this.handleResize.bind(this)
 
@@ -39,18 +39,16 @@ export class Engine3d {
   private loop(): void {
     this.update()
 
-    if (this.composer) {
-      this.composer.render()
-    } else {
-      this.renderer.render(this.scene, this.camera)
+    if (this.scene && this.camera) {
+      this.renderer.render(this.scene.scene, this.camera)
     }
 
     this.animationFrameId = requestAnimationFrame(this.loop)
   }
 
   public update(): void {
-    if (this.controls) {
-      this.controls.update()
+    if (this.scene) {
+      this.scene.update(this.clock.getDelta())
     }
   }
 
@@ -62,8 +60,8 @@ export class Engine3d {
     this.camera.aspect = width / height
     this.camera.updateProjectionMatrix()
 
-    if (this.composer) {
-      this.composer.setSize(width, height)
+    if (this.scene) {
+      this.scene.composer.setSize(width, height)
     }
   }
 
@@ -77,19 +75,15 @@ export class Engine3d {
     // Remova outros event listeners aqui
   }
 
+  public setScene(scene: SceneInterface) {
+    this.scene = scene
+  }
+
   public dispose(): void {
     this.stop()
 
-    // Limpeza de recursos
-    if (this.controls) {
-      this.controls.dispose()
+    if (this.scene) {
+      this.scene.dispose()
     }
-
-    if (this.composer) {
-      this.composer.dispose()
-    }
-
-    this.renderer.dispose()
-    // Adicione outras limpezas necessárias
   }
 }
