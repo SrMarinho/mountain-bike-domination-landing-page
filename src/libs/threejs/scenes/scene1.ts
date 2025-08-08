@@ -50,7 +50,7 @@ class Scene1 implements SceneInterface {
 
   public render(): void {}
 
-  dispose(): void {
+  public dispose(): void {
     if (this.composer) {
       this.composer.dispose()
     }
