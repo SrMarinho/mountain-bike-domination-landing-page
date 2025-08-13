@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full h-screen flex items-center">
+  <div class="w-full h-screen flex items-center m-0 border-0">
     <div
       class="w-full h-screen fixed bg-black text-white flex justify-center items-center z-50"
       v-if="isLoading"

@@ -16,6 +16,8 @@ interface SceneInterface {
 
   render(): void
 
+  resize(): void
+
   dispose(): void
 }
 
