@@ -1,10 +1,11 @@
 <template>
   <div class="w-full h-screen relative flex lg:items-center m-0 border-0">
     <div
+      ref="loadingOverlay"
       class="w-full h-screen fixed bg-black text-white flex flex-col justify-center items-center gap-10 z-50"
-      v-if="isLoading"
+      v-show="showOverlay"
     >
-      <div class="flex flex-col items-center gap-1">
+      <div ref="loadingContent" class="flex flex-col items-center gap-1">
         <h1 class="text-5xl sm:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-green-400">
           DOWNHILL
         </h1>
@@ -13,7 +14,7 @@
         </h1>
       </div>
 
-      <div class="flex flex-col items-center gap-3 w-56 sm:w-72">
+      <div ref="loadingBar" class="flex flex-col items-center gap-3 w-56 sm:w-72">
         <div class="w-full h-px bg-gray-800 rounded-full overflow-hidden">
           <div
             class="h-full bg-gradient-to-r from-cyan-500 to-green-500 transition-all duration-300 ease-out"
@@ -119,6 +120,7 @@ import { PlayIcon, ChevronDownIcon } from '@heroicons/vue/24/outline'
 import gsap from 'gsap'
 
 const isLoading = ref(true)
+const showOverlay = ref(true)
 const loadingProgress = ref(0)
 const loadError = ref(false)
 const needsGyroPermission = ref(false)
@@ -127,6 +129,9 @@ const heroTitle = ref<HTMLElement | null>(null)
 const heroSubtitle = ref<HTMLElement | null>(null)
 const heroButtons = ref<HTMLElement | null>(null)
 const heroStats = ref<HTMLElement | null>(null)
+const loadingOverlay = ref<HTMLElement | null>(null)
+const loadingContent = ref<HTMLElement | null>(null)
+const loadingBar = ref<HTMLElement | null>(null)
 const sceneManager = useSceneManager()
 
 let canvas: HTMLCanvasElement | null
@@ -198,12 +203,9 @@ async function initScene() {
     engine.start()
 
     await loadAssets()
-
-    isLoading.value = false
     loadingProgress.value = 100
 
-    cameraAnimation()
-    animateHeroEntrance()
+    revealScene()
 
     let lastMouseTime = 0
     mouseMoveListener = (e: MouseEvent) => {
@@ -438,14 +440,40 @@ function setupLights() {
   sceneManager.add(fillLight)
 }
 
-function animateHeroEntrance() {
+function revealScene() {
   const els = [heroTitle.value, heroSubtitle.value, heroButtons.value, heroStats.value]
   gsap.set(els, { opacity: 0, y: 40 })
-  gsap.timeline({ delay: 0.3 })
-    .to(heroTitle.value,    { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' })
+
+  gsap.timeline()
+    // Conteúdo da loading sobe e some
+    .to([loadingContent.value, loadingBar.value], {
+      opacity: 0,
+      y: -40,
+      duration: 0.5,
+      ease: 'power3.in',
+      stagger: 0.08,
+    })
+    // Overlay desbota revelando a cena
+    .to(loadingOverlay.value, {
+      opacity: 0,
+      duration: 0.9,
+      ease: 'power2.inOut',
+      onComplete: () => {
+        isLoading.value = false
+        showOverlay.value = false
+      },
+    }, '-=0.1')
+    // Câmera tilta do céu para a bike
+    .add(() => cameraAnimation(), '-=0.5')
+    // Hero text entra em cascata
+    .to(heroTitle.value,    { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }, '+=0.1')
     .to(heroSubtitle.value, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, '-=0.5')
     .to(heroButtons.value,  { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, '-=0.4')
     .to(heroStats.value,    { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, '-=0.3')
+}
+
+function animateHeroEntrance() {
+  // Mantido para compatibilidade futura (não utilizado no fluxo principal)
 }
 
 function cameraAnimation() {
@@ -563,8 +591,8 @@ async function resizeHandler(
   }
 }
 
-watch(isLoading, (loading) => {
-  document.body.style.overflow = loading ? 'hidden' : ''
+watch(showOverlay, (visible) => {
+  document.body.style.overflow = visible ? 'hidden' : ''
 }, { immediate: true })
 
 onMounted(initScene)
