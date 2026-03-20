@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full h-screen flex items-center m-0 border-0">
+  <div class="w-full h-screen relative flex lg:items-center m-0 border-0">
     <div
       class="w-full h-screen fixed bg-black text-white flex justify-center items-center z-50"
       v-if="isLoading"
@@ -18,46 +18,49 @@
         Tentar novamente
       </button>
     </div>
+    <!-- Gradiente mobile/tablet: cobre o topo da tela de cima para baixo -->
+    <div class="absolute top-0 left-0 w-full h-2/3 bg-gradient-to-b from-black to-transparent lg:hidden" />
+
     <div
-      class="container sm:w-full h-screen flex flex-col justify-center items-center text-white sm:px-0 md:px-4 lg:px-8 gap-8 max-w-4xl bg-gradient-to-r from-black to-transparent"
+      class="absolute top-1/3 -translate-y-1/2 left-0 w-full lg:static lg:translate-y-0 lg:h-screen flex flex-col justify-center items-center text-white px-6 lg:px-8 gap-4 lg:gap-8 max-w-4xl lg:bg-gradient-to-r lg:from-black lg:to-transparent"
     >
-      <h1 class="flex flex-col text-6xl md:text-8xl font-bold">
+      <h1 class="flex flex-col items-center lg:items-start text-8xl md:text-8xl lg:text-8xl font-bold">
         <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-green-400"
           >DOWNHILL</span
         >
         <span class="text-white">DOMINATION</span>
       </h1>
-      <h2 class="max-w-2xl text-2xl text-gray-300">
+      <h2 class="hidden lg:block max-w-2xl text-2xl text-gray-300">
         Where skill meets the mountain. Experience the ultimate adrenaline rush as you conquer
         technical trails and defy gravity
       </h2>
-      <div class="flex gap-4">
+      <div class="flex gap-3 lg:gap-4">
         <button
-          class="flex justify-center items-center gap-2 bg-cyan-400 py-4 px-8 sm:px-2 sm:py-1 font-bold text-xl rounded-lg bg-gradient-to-r from-cyan-600 to-green-600 hover:from-cyan-500 hover:to-green-500 hover:shadow-cyan-400/30 hover:shadow-lg duration-200 hover:scale-105"
+          class="flex justify-center items-center gap-2 py-3 px-6 lg:py-4 lg:px-8 font-bold text-lg lg:text-xl rounded-lg bg-gradient-to-r from-cyan-600 to-green-600 hover:from-cyan-500 hover:to-green-500 hover:shadow-cyan-400/30 hover:shadow-lg duration-200 hover:scale-105"
         >
-          <PlayIcon class="w-6" />
+          <PlayIcon class="w-5 lg:w-6" />
           Watch Demo
         </button>
         <button
-          class="flex justify-center items-center py-4 px-10 text-cyan-400 font-bold text-xl border-cyan-400 border-solid border-2 rounded-lg hover:bg-cyan-400 hover:text-black duration-200 hover:scale-105"
+          class="flex justify-center items-center py-3 px-8 lg:py-4 lg:px-10 text-cyan-400 font-bold text-lg lg:text-xl border-cyan-400 border-solid border-2 rounded-lg hover:bg-cyan-400 hover:text-black duration-200 hover:scale-105"
         >
           Explore trails
         </button>
       </div>
       <div class="flex w-full justify-around">
         <div>
-          <p class="text-cyan-400 text-3xl font-bold">50+</p>
-          <p class="text-gray-400">Trails</p>
+          <p class="text-cyan-400 text-2xl lg:text-3xl font-bold">50+</p>
+          <p class="text-gray-400 text-sm lg:text-base">Trails</p>
         </div>
 
         <div>
-          <p class="text-green-400 text-3xl font-bold">2000m</p>
-          <p class="text-gray-400">Vertical Drop</p>
+          <p class="text-green-400 text-2xl lg:text-3xl font-bold">2000m</p>
+          <p class="text-gray-400 text-sm lg:text-base">Vertical Drop</p>
         </div>
 
         <div>
-          <p class="text-orange-400 text-3xl font-bold">80km/h</p>
-          <p class="text-gray-400">Top Speed</p>
+          <p class="text-orange-400 text-2xl lg:text-3xl font-bold">80km/h</p>
+          <p class="text-gray-400 text-sm lg:text-base">Top Speed</p>
         </div>
       </div>
     </div>
@@ -476,19 +479,30 @@ async function resizeHandler(
   camera: THREE.PerspectiveCamera,
   controls: OrbitControls,
 ): Promise<void> {
-  gsap.to(camera.position, {
-    x: lerp(500, 0.1, 1670, -0.75, window.innerWidth),
-    y: 1.231,
-    z: lerp(500, 2.5, 1670, 1.7, window.innerWidth),
-    duration: 0,
-  })
+  const isMobile = window.innerWidth < 768
+  const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024
 
-  gsap.to(controls.target, {
-    x: lerp(500, 0.1, 1670, -0.7, window.innerWidth),
-    y: 1.87,
-    z: -0.016,
-    duration: 0,
-  })
+  if (isMobile) {
+    gsap.to(camera.position, { x: 0.3, y: 0.6, z: 4.0, duration: 0 })
+    gsap.to(controls.target, { x: 0.3, y: 2.8, z: -0.016, duration: 0 })
+  } else if (isTablet) {
+    gsap.to(camera.position, { x: 0.3, y: 0.6, z: 2.8, duration: 0 })
+    gsap.to(controls.target, { x: 0.3, y: 2.8, z: -0.016, duration: 0 })
+  } else {
+    const w = Math.min(window.innerWidth, 1590)
+    gsap.to(camera.position, {
+      x: lerp(1024, -0.4, 1590, -0.75, w),
+      y: 1.231,
+      z: lerp(1024, 2.6, 1590, 1.7, w),
+      duration: 0,
+    })
+    gsap.to(controls.target, {
+      x: lerp(1024, -0.3, 1590, -0.7, w),
+      y: 1.87,
+      z: -0.016,
+      duration: 0,
+    })
+  }
 }
 
 watch(isLoading, (loading) => {
