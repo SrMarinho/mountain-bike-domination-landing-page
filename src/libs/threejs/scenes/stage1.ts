@@ -1,11 +1,11 @@
 import * as THREE from 'three'
-import type { SceneInterface } from '../interfaces/scene_interface'
+import type { StageInterface } from '../interfaces/stage_interface'
 import { EffectComposer } from 'three/examples/jsm/Addons.js'
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { Entity } from '../entities/entity'
 
-class Scene1 implements SceneInterface {
+class Stage1 implements StageInterface {
   public canvas: HTMLCanvasElement
   public scene: THREE.Scene
   public camera: THREE.PerspectiveCamera | THREE.OrthographicCamera
@@ -50,13 +50,26 @@ class Scene1 implements SceneInterface {
 
   public render(): void {}
 
-  resize(): void {}
+  public resize(): void {}
 
   public dispose(): void {
-    if (this.composer) {
-      this.composer.dispose()
-    }
+    this.objects.forEach((entity) => entity.dispose())
+    this.objects = []
+
+    this.scene.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.geometry?.dispose()
+        if (Array.isArray(child.material)) {
+          child.material.forEach((m) => m.dispose())
+        } else {
+          child.material?.dispose()
+        }
+      }
+    })
+    this.scene.clear()
+
+    this.composer.dispose()
   }
 }
 
-export default Scene1
+export default Stage1

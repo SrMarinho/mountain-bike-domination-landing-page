@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
 import { Entity } from '../entities/entity'
 
-interface SceneInterface {
+interface StageInterface {
   canvas: HTMLCanvasElement
   scene: THREE.Scene
   camera: THREE.PerspectiveCamera | THREE.OrthographicCamera
@@ -21,4 +21,4 @@ interface SceneInterface {
   dispose(): void
 }
 
-export type { SceneInterface }
+export type { StageInterface }

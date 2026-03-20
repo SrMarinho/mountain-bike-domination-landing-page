@@ -1,4 +1,4 @@
-import { Object3D } from 'three'
+import { Object3D, Mesh } from 'three'
 import type { ComponentInterface } from '../interfaces/component_interface'
 import type { TransformationComponent } from './transformation_component'
 
@@ -10,8 +10,19 @@ class GraphicComponent implements ComponentInterface {
     this.object3D = object3D
     this.transform = null
   }
+
   dispose(): void {
-    throw new Error('Method not implemented.')
+    this.object3D.traverse((child) => {
+      if (child instanceof Mesh) {
+        child.geometry?.dispose()
+        if (Array.isArray(child.material)) {
+          child.material.forEach((m) => m.dispose())
+        } else {
+          child.material?.dispose()
+        }
+      }
+    })
+    this.transform = null
   }
 
   public setTransformationComponent(transform: TransformationComponent): void {

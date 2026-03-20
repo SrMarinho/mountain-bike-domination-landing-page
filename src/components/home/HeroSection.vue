@@ -7,6 +7,18 @@
       Loading: {{ Math.round(loadingProgress) }}%
     </div>
     <div
+      class="w-full h-screen fixed bg-black text-white flex flex-col justify-center items-center gap-4 z-50"
+      v-if="loadError"
+    >
+      <p class="text-red-400 text-xl font-bold">Falha ao carregar a cena 3D</p>
+      <button
+        class="px-6 py-2 border border-cyan-400 text-cyan-400 rounded-lg hover:bg-cyan-400 hover:text-black duration-200"
+        @click="initScene"
+      >
+        Tentar novamente
+      </button>
+    </div>
+    <div
       class="container sm:w-full h-screen flex flex-col justify-center items-center text-white sm:px-0 md:px-4 lg:px-8 gap-8 max-w-4xl bg-gradient-to-r from-black to-transparent"
     >
       <h1 class="flex flex-col text-6xl md:text-8xl font-bold">
@@ -72,16 +84,22 @@ import gsap from 'gsap'
 
 const isLoading = ref(true)
 const loadingProgress = ref(0)
+const loadError = ref(false)
 const sceneManager = useSceneManager()
 
 let canvas: HTMLCanvasElement | null
 let renderer: THREE.WebGLRenderer
 let camera: THREE.PerspectiveCamera
 let controls: OrbitControls
+let engine: Engine3d | null = null
 
 let gui: GUI
 
 let mainLight: THREE.SpotLight
+
+let mouseMoveListener: ((e: MouseEvent) => void) | null = null
+let deviceOrientationListener: ((e: DeviceOrientationEvent) => void) | null = null
+let resizeListener: (() => void) | null = null
 
 // Configurações
 const sceneConfig = {
@@ -100,48 +118,52 @@ const sceneConfig = {
 
 // Inicialização principal
 async function initScene() {
-  try {
-    const { canvas, renderer, camera } = setupBaseScene()
-    const engine = new Engine3d(canvas, renderer, camera)
+  loadError.value = false
+  isLoading.value = true
+  loadingProgress.value = 0
 
+  try {
+    const base = setupBaseScene()
+    canvas = base.canvas
+    renderer = base.renderer
+    camera = base.camera
+
+    engine = new Engine3d(canvas, renderer, camera)
     engine.start()
 
     gui = new GUI()
 
-    onUnmounted(() => gui.destroy())
-
-    // Carregamento assíncrono de assets
     await loadAssets(gui)
 
-    // Finalização
     isLoading.value = false
     loadingProgress.value = 100
 
     cameraAnimation(camera)
 
-    window.addEventListener(
-      'deviceorientation',
-      (e) => {
-        gyroscopeHandler(e, canvas!, controls)
-      },
-      { passive: true },
-    )
-
-    document.addEventListener('mousemove', (e) => {
+    let lastMouseTime = 0
+    mouseMoveListener = (e: MouseEvent) => {
+      const now = Date.now()
+      if (now - lastMouseTime < 16) return
+      lastMouseTime = now
       mouseHandler(e, canvas!, controls)
-    })
+    }
+    document.addEventListener('mousemove', mouseMoveListener)
+
+    deviceOrientationListener = (e: DeviceOrientationEvent) => {
+      gyroscopeHandler(e, canvas!, controls)
+    }
+    window.addEventListener('deviceorientation', deviceOrientationListener, { passive: true })
+
+    resizeListener = () => resizeHandler(canvas!, camera, controls)
+    window.addEventListener('resize', resizeListener)
+    resizeHandler(canvas!, camera, controls)
 
     setupGuiControls('camera', gui, camera)
     gui.show(false)
-
-    window.addEventListener('resize', () => {
-      resizeHandler(canvas!, camera, controls)
-    })
-    resizeHandler(canvas!, camera, controls)
-    // gui.hide()
   } catch (error) {
     console.error('Erro ao inicializar cena:', error)
     isLoading.value = false
+    loadError.value = true
   }
 }
 
@@ -200,14 +222,23 @@ async function loadAssets(gui: GUI) {
 
   // Background
   loadPromises.push(
-    new Promise((resolve) => {
+    new Promise<void>((resolve) => {
       const loader = new THREE.TextureLoader()
-      loader.load('landscape1.jpg', (texture) => {
-        texture.colorSpace = THREE.SRGBColorSpace
-        sceneManager.scene.background = texture
-        loadingProgress.value += progressIncrement
-        resolve()
-      })
+      loader.load(
+        'landscape1.jpg',
+        (texture) => {
+          texture.colorSpace = THREE.SRGBColorSpace
+          sceneManager.scene.background = texture
+          loadingProgress.value += progressIncrement
+          resolve()
+        },
+        undefined,
+        (err) => {
+          console.error('Falha ao carregar background:', err)
+          loadingProgress.value += progressIncrement
+          resolve()
+        },
+      )
     }),
   )
 
@@ -245,27 +276,36 @@ async function loadAssets(gui: GUI) {
       const geometry = new THREE.PlaneGeometry(10, 5, 100, 20)
       const textureLoader = new THREE.TextureLoader()
 
-      textureLoader.load('sky_bg.jpg', (texture) => {
-        texture.wrapS = THREE.RepeatWrapping
-        texture.wrapT = THREE.RepeatWrapping
-        texture.repeat.set(1, 1)
+      textureLoader.load(
+        'sky_bg.jpg',
+        (texture) => {
+          texture.wrapS = THREE.RepeatWrapping
+          texture.wrapT = THREE.RepeatWrapping
+          texture.repeat.set(1, 1)
 
-        const material = new THREE.MeshStandardMaterial({
-          map: texture,
-          side: THREE.DoubleSide,
-          normalMap: texture,
-          color: 0xffffff,
-        })
+          const material = new THREE.MeshStandardMaterial({
+            map: texture,
+            side: THREE.DoubleSide,
+            normalMap: texture,
+            color: 0xffffff,
+          })
 
-        const curvedPlane = new THREE.Mesh(geometry, material)
-        curvedPlane.position.set(0, 4.6, -4.02)
-        curvedPlane.rotation.set(0.26, 0, 0)
-        curvedPlane.scale.set(3, 3, 3)
-        // sceneManager.add(curvedPlane)
+          const curvedPlane = new THREE.Mesh(geometry, material)
+          curvedPlane.position.set(0, 4.6, -4.02)
+          curvedPlane.rotation.set(0.26, 0, 0)
+          curvedPlane.scale.set(3, 3, 3)
+          // sceneManager.add(curvedPlane)
 
-        loadingProgress.value += progressIncrement
-        resolve()
-      })
+          loadingProgress.value += progressIncrement
+          resolve()
+        },
+        undefined,
+        (err) => {
+          console.error('Falha ao carregar sky_bg:', err)
+          loadingProgress.value += progressIncrement
+          resolve()
+        },
+      )
     }),
   )
 
@@ -366,19 +406,13 @@ function gyroscopeHandler(
   canvas: HTMLCanvasElement,
   controls: OrbitControls,
 ) {
-  const update = () => {
-    if (event.gamma !== null) {
-      controls.object.position.x = -0.5 * ((event.gamma * 10) / canvas.clientWidth) * 2
-    }
-
-    if (event.beta !== null) {
-      controls.object.position.y = -1 * ((event.beta * 10) / canvas.clientHeight) + 0.5 + 1.5
-    }
-
-    requestAnimationFrame(update)
+  if (event.gamma !== null) {
+    controls.object.position.x = -0.5 * ((event.gamma * 10) / canvas.clientWidth) * 2
   }
 
-  update()
+  if (event.beta !== null) {
+    controls.object.position.y = -1 * ((event.beta * 10) / canvas.clientHeight) + 0.5 + 1.5
+  }
 }
 
 function lerp(x0: number, y0: number, x1: number, y1: number, x: number) {
@@ -410,6 +444,15 @@ async function resizeHandler(
 }
 
 onMounted(initScene)
+
+onUnmounted(() => {
+  gui?.destroy()
+  engine?.dispose()
+  if (mouseMoveListener) document.removeEventListener('mousemove', mouseMoveListener)
+  if (deviceOrientationListener)
+    window.removeEventListener('deviceorientation', deviceOrientationListener)
+  if (resizeListener) window.removeEventListener('resize', resizeListener)
+})
 </script>
 
 <style scoped></style>

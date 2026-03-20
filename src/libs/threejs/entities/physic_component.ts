@@ -14,7 +14,8 @@ class PhysicComponent implements ComponentInterface {
     this.transform = null
   }
   dispose(): void {
-    throw new Error('Method not implemented.')
+    this.velocity.set(0, 0, 0)
+    this.transform = null
   }
 
   public setTransformationComponent(transform: TransformationComponent): void {
