@@ -55,7 +55,7 @@
           Expert
         </button>
       </div>
-      <div class="relative transition-all duration-500">
+      <div ref="cardsGrid" class="relative transition-all duration-500">
         <TransitionGroup
           name="fade"
           tag="div"
@@ -156,6 +156,7 @@ function setTrailFilter(difficulty: TrailDifficulty) {
 }
 
 const sectionTitle = ref<HTMLElement | null>(null)
+const cardsGrid = ref<HTMLElement | null>(null)
 
 onMounted(() => {
   gsap.fromTo(
@@ -164,6 +165,19 @@ onMounted(() => {
     { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out',
       scrollTrigger: { trigger: sectionTitle.value, start: 'top 85%' } },
   )
+
+  ScrollTrigger.create({
+    trigger: cardsGrid.value,
+    start: 'top 85%',
+    once: true,
+    onEnter: () => {
+      gsap.fromTo(
+        cardsGrid.value!.querySelectorAll('.trail-card'),
+        { opacity: 0, y: 50 },
+        { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out', stagger: 0.12 },
+      )
+    },
+  })
 })
 </script>
 
