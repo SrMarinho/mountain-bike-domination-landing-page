@@ -6,6 +6,8 @@ export class Engine3d {
   private animationFrameId: number | null = null
   private isRunning = false
   public scene: SceneInterface | null = null
+  public rawScene: THREE.Scene | null = null
+  public onFrame: (() => void) | null = null
 
   constructor(
     public canvas: HTMLCanvasElement,
@@ -39,8 +41,14 @@ export class Engine3d {
   private loop(): void {
     this.update()
 
+    if (this.onFrame) {
+      this.onFrame()
+    }
+
     if (this.scene && this.camera) {
       this.renderer.render(this.scene.scene, this.camera)
+    } else if (this.rawScene && this.camera) {
+      this.renderer.render(this.rawScene, this.camera)
     }
 
     this.animationFrameId = requestAnimationFrame(this.loop)

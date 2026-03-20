@@ -129,6 +129,8 @@ async function initScene() {
     camera = base.camera
 
     engine = new Engine3d(canvas, renderer, camera)
+    engine.rawScene = sceneManager.scene
+    engine.onFrame = () => controls.update()
     engine.start()
 
     gui = new GUI()
