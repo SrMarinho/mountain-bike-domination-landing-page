@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import type { SceneInterface } from '../interfaces/stage_interface'
+import type { StageInterface as SceneInterface } from '../interfaces/stage_interface'
 
 export class Engine3d {
   private clock: THREE.Clock
