@@ -85,7 +85,6 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 import * as THREE from 'three'
-import { GUI } from 'three/addons/libs/lil-gui.module.min.js'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js'
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
@@ -112,8 +111,6 @@ let camera: THREE.PerspectiveCamera
 let controls: OrbitControls
 let engine: Engine3d | null = null
 let composer: EffectComposer
-
-let gui: GUI
 
 let mainLight: THREE.SpotLight
 
@@ -176,9 +173,7 @@ async function initScene() {
     }
     engine.start()
 
-    gui = new GUI()
-
-    await loadAssets(gui)
+    await loadAssets()
 
     isLoading.value = false
     loadingProgress.value = 100
@@ -203,8 +198,6 @@ async function initScene() {
     window.addEventListener('resize', resizeListener)
     resizeHandler(canvas!, camera, controls)
 
-    setupGuiControls('camera', gui, camera)
-    gui.show(false)
   } catch (error) {
     console.error('Erro ao inicializar cena:', error)
     isLoading.value = false
@@ -264,7 +257,7 @@ function setupBaseScene() {
 }
 
 // Carregamento de assets
-async function loadAssets(gui: GUI) {
+async function loadAssets() {
   const loadPromises: Promise<void>[] = []
   const totalAssets = 4 // Ajuste conforme necessário
   const progressIncrement = 100 / totalAssets
@@ -420,22 +413,6 @@ function setupLights() {
   sceneManager.add(fillLight)
 }
 
-// Controles GUI
-function setupGuiControls(name: string, gui: GUI, object: THREE.Object3D) {
-  const folder = gui.addFolder(name)
-  folder.add(object.scale, 'x', 0, 100).name('Escala X')
-  folder.add(object.scale, 'y', 0, 100).name('Escala Y')
-  folder.add(object.scale, 'z', 0, 100).name('Escala Z')
-
-  folder.add(object.position, 'x', -100, 100).name('Posição X')
-  folder.add(object.position, 'y', -100, 100).name('Posição Y')
-  folder.add(object.position, 'z', -100, 100).name('Posição Z')
-
-  folder.add(object.rotation, 'x', -10, 10).name('Rotação X')
-  folder.add(object.rotation, 'y', -10, 10).name('Rotação Y')
-  folder.add(object.rotation, 'z', -10, 10).name('Rotação Z')
-}
-
 async function cameraAnimation(camera: THREE.PerspectiveCamera) {
   gsap.to(camera.rotation, {
     z: Math.PI,
@@ -550,7 +527,6 @@ watch(isLoading, (loading) => {
 onMounted(initScene)
 
 onUnmounted(() => {
-  gui?.destroy()
   composer?.dispose()
   engine?.dispose()
   if (mouseMoveListener) document.removeEventListener('mousemove', mouseMoveListener)
