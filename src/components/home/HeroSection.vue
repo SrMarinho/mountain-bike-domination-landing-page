@@ -205,6 +205,15 @@ async function initScene() {
     await loadAssets()
     loadingProgress.value = 100
 
+    // Configura resize e posiciona câmera corretamente ANTES do reveal
+    resizeListener = () => {
+      resizeHandler(canvas!, camera, controls)
+      composer.setSize(canvas!.clientWidth, canvas!.clientHeight)
+    }
+    window.addEventListener('resize', resizeListener)
+    resizeHandler(canvas!, camera, controls)
+
+    // Reveal anima a câmera do céu — deve ser chamado após o resize
     revealScene()
 
     let lastMouseTime = 0
@@ -217,13 +226,6 @@ async function initScene() {
     document.addEventListener('mousemove', mouseMoveListener)
 
     await setupGyroscope()
-
-    resizeListener = () => {
-      resizeHandler(canvas!, camera, controls)
-      composer.setSize(canvas!.clientWidth, canvas!.clientHeight)
-    }
-    window.addEventListener('resize', resizeListener)
-    resizeHandler(canvas!, camera, controls)
 
   } catch (error) {
     console.error('Erro ao inicializar cena:', error)
