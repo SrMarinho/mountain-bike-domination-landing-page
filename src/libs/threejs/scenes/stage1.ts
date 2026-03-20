@@ -25,7 +25,7 @@ class Stage1 implements StageInterface {
 
   public setup(): void {
     this.renderer.setClearColor(0x000000, 0)
-    this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight)
+    this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight, false)
     this.renderer.shadowMap.enabled = true
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
 

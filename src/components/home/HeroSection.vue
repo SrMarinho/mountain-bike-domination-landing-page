@@ -182,7 +182,7 @@ function setupBaseScene() {
     powerPreference: 'high-performance',
   })
   renderer.setClearColor(0x000000, 0)
-  renderer.setSize(canvas.clientWidth, canvas.clientHeight)
+  renderer.setSize(canvas.clientWidth, canvas.clientHeight, false)
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
