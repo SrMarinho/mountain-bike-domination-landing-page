@@ -304,8 +304,17 @@ async function loadAssets() {
       model.position.set(0.3, 1.87, -0.016)
       model.rotation.set(-0.1, 3.6, 0)
       model.castShadow = true
-      // controls.target.set(model.position.x - 1, model.position.y, model.position.z)
       sceneManager.add(model)
+
+      // Flutuação suave da bike
+      gsap.to(model.position, {
+        y: 1.87 + 0.04,
+        duration: 2.2,
+        ease: 'sine.inOut',
+        yoyo: true,
+        repeat: -1,
+      })
+
       loadingProgress.value += progressIncrement
     }),
   )
