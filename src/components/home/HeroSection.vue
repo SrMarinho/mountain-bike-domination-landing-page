@@ -1,10 +1,29 @@
 <template>
   <div class="w-full h-screen relative flex lg:items-center m-0 border-0">
     <div
-      class="w-full h-screen fixed bg-black text-white flex justify-center items-center z-50"
+      class="w-full h-screen fixed bg-black text-white flex flex-col justify-center items-center gap-10 z-50"
       v-if="isLoading"
     >
-      Loading: {{ Math.round(loadingProgress) }}%
+      <div class="flex flex-col items-center gap-1">
+        <h1 class="text-5xl sm:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-green-400">
+          DOWNHILL
+        </h1>
+        <h1 class="text-5xl sm:text-7xl font-bold text-white tracking-widest">
+          DOMINATION
+        </h1>
+      </div>
+
+      <div class="flex flex-col items-center gap-3 w-56 sm:w-72">
+        <div class="w-full h-px bg-gray-800 rounded-full overflow-hidden">
+          <div
+            class="h-full bg-gradient-to-r from-cyan-500 to-green-500 transition-all duration-300 ease-out"
+            :style="{ width: loadingProgress + '%' }"
+          />
+        </div>
+        <p class="text-gray-600 text-xs tracking-[0.3em] uppercase">
+          {{ Math.round(loadingProgress) }}%
+        </p>
+      </div>
     </div>
     <div
       class="w-full h-screen fixed bg-black text-white flex flex-col justify-center items-center gap-4 z-50"
@@ -183,7 +202,7 @@ async function initScene() {
     isLoading.value = false
     loadingProgress.value = 100
 
-    cameraAnimation(camera)
+    cameraAnimation()
     animateHeroEntrance()
 
     let lastMouseTime = 0
@@ -305,15 +324,6 @@ async function loadAssets() {
       model.rotation.set(-0.1, 3.6, 0)
       model.castShadow = true
       sceneManager.add(model)
-
-      // Flutuação suave da bike
-      gsap.to(model.position, {
-        y: 1.87 + 0.04,
-        duration: 2.2,
-        ease: 'sine.inOut',
-        yoyo: true,
-        repeat: -1,
-      })
 
       loadingProgress.value += progressIncrement
     }),
@@ -438,16 +448,24 @@ function animateHeroEntrance() {
     .to(heroStats.value,    { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, '-=0.3')
 }
 
-async function cameraAnimation(camera: THREE.PerspectiveCamera) {
-  gsap.to(camera.rotation, {
-    z: Math.PI,
-    duration: 1,
-    ease: 'power4.inOut',
-    delay: 0.1, // substitui o stagger quando são dois tweens separados
-    onUpdate: () => {
-      camera.updateProjectionMatrix()
-      controls.update()
-    },
+function cameraAnimation() {
+  const isMobile = window.innerWidth < 768
+  const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024
+
+  const lookY = isMobile || isTablet ? 2.8 : 1.87
+  const lookX = isMobile || isTablet
+    ? 0.3
+    : lerp(1024, -0.3, 1590, -0.7, Math.min(window.innerWidth, 1590))
+
+  // Começa olhando para o céu, desce até a bike
+  controls.target.set(lookX, lookY + 6, -0.016)
+  controls.update()
+
+  gsap.to(controls.target, {
+    y: lookY,
+    duration: 2.2,
+    ease: 'power3.inOut',
+    onUpdate: () => { controls.update() },
   })
 }
 
