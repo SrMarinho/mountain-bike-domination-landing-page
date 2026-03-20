@@ -15,16 +15,16 @@
     <!-- Trails -->
     <div class="w-full gap-12 flex flex-col justify-center items-center">
       <!-- Trail filter -->
-      <div class="w-fit flex flex-nowrap py-2 px-2 bg-black-light rounded-lg font-medium">
+      <div class="flex flex-wrap justify-center gap-1 py-2 px-2 bg-black-light rounded-lg font-medium">
         <button
-          class="px-6 py-3 hover:bg-white/10 hover:text-white rounded-md duration-200"
+          class="px-3 py-2 sm:px-6 sm:py-3 text-sm sm:text-base hover:bg-white/10 hover:text-white rounded-md duration-200"
           :class="!trailFilterSelected ? 'text-black bg-white' : 'text-white'"
           @click="() => (trailFilterSelected = null)"
         >
           All Trails
         </button>
         <button
-          class="px-6 py-3 hover:bg-green-400/10 hover:text-green-400 rounded-md duration-200"
+          class="px-3 py-2 sm:px-6 sm:py-3 text-sm sm:text-base hover:bg-green-400/10 hover:text-green-400 rounded-md duration-200"
           :class="
             trailFilterSelected == TrailDifficulty.Beginner
               ? 'text-black bg-green-400'
@@ -35,7 +35,7 @@
           Beginner
         </button>
         <button
-          class="px-6 py-3 hover:text-yellow-400 hover:bg-yellow-400/10 rounded-md duration-200"
+          class="px-3 py-2 sm:px-6 sm:py-3 text-sm sm:text-base hover:text-yellow-400 hover:bg-yellow-400/10 rounded-md duration-200"
           :class="
             trailFilterSelected == TrailDifficulty.Intermediate
               ? 'text-black bg-yellow-400'
@@ -46,7 +46,7 @@
           Intermediate
         </button>
         <button
-          class="px-6 py-3 hover:text-red-400 hover:bg-red-400/10 rounded-md duration-200"
+          class="px-3 py-2 sm:px-6 sm:py-3 text-sm sm:text-base hover:text-red-400 hover:bg-red-400/10 rounded-md duration-200"
           :class="
             trailFilterSelected == TrailDifficulty.Expert ? 'text-black bg-red-400' : 'text-red-400'
           "
