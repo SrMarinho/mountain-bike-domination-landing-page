@@ -33,7 +33,7 @@
     <div
       class="absolute top-1/3 -translate-y-1/2 left-0 w-full lg:static lg:translate-y-0 lg:h-screen flex flex-col justify-center items-center text-white px-6 lg:px-8 gap-4 lg:gap-8 max-w-4xl lg:bg-gradient-to-r lg:from-black lg:to-transparent"
     >
-      <h1 class="flex flex-col items-center lg:items-start text-8xl md:text-8xl lg:text-8xl font-bold">
+      <h1 class="flex flex-col items-center lg:items-start text-5xl sm:text-8xl lg:text-8xl font-bold">
         <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-green-400"
           >DOWNHILL</span
         >
@@ -47,7 +47,7 @@
         <button
           class="flex justify-center items-center gap-2 py-3 px-6 lg:py-4 lg:px-8 font-bold text-lg lg:text-xl rounded-lg bg-gradient-to-r from-cyan-600 to-green-600 hover:from-cyan-500 hover:to-green-500 hover:shadow-cyan-400/30 hover:shadow-lg duration-200 hover:scale-105"
         >
-          <PlayIcon class="w-5 lg:w-6" />
+          <PlayIcon class="w-6 shrink-0" />
           Watch Demo
         </button>
         <button
