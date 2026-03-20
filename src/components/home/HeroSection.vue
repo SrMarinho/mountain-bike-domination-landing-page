@@ -78,6 +78,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js'
+import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js'
 import { Engine3d } from '@/libs/threejs/core/engine3d'
 import { Bike3D } from '@/libs/threejs/objects/bike'
 import { Terrain2 } from '@/libs/threejs/objects/terrain2'
@@ -136,14 +138,22 @@ async function initScene() {
 
     composer = new EffectComposer(renderer)
     composer.addPass(new RenderPass(sceneManager.scene, camera))
+
+    // Bloom opera em HDR linear — threshold alto para só afetar reflexos especulares
     composer.addPass(
       new UnrealBloomPass(
         new THREE.Vector2(canvas.clientWidth, canvas.clientHeight),
-        0.8,
-        0.5,
-        0.6,
+        0.35,  // strength  — sutil
+        0.35,  // radius    — spread apertado
+        0.88,  // threshold — apenas os picos de especular
       ),
     )
+
+    // OutputPass aplica ACES tone mapping e conversão de color space
+    composer.addPass(new OutputPass())
+
+    // SMAA como última passagem — antialiasing no resultado final LDR
+    composer.addPass(new SMAAPass(canvas.clientWidth, canvas.clientHeight))
 
     engine.onFrame = () => {
       controls.update()
@@ -203,11 +213,12 @@ function setupBaseScene() {
     powerPreference: 'high-performance',
   })
   renderer.setClearColor(0x000000, 0)
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.setSize(canvas.clientWidth, canvas.clientHeight, false)
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
   renderer.toneMapping = THREE.ACESFilmicToneMapping
-  renderer.toneMappingExposure = 1.1
+  renderer.toneMappingExposure = 0.9
   renderer.outputColorSpace = THREE.SRGBColorSpace
 
   // Câmera
@@ -352,12 +363,13 @@ function setupLights() {
   sceneManager.add(ambientLight)
 
   // Key light — branco-frio de cima, iluminação base com sombra nítida
-  mainLight = new THREE.SpotLight(0xd0e8ff, 80, 0, Math.PI * 0.1)
+  mainLight = new THREE.SpotLight(0xd0e8ff, 25, 0, Math.PI * 0.1)
   mainLight.position.set(1.2, 5.5, 3)
-  mainLight.penumbra = 0.4
+  mainLight.penumbra = 0.5
   mainLight.decay = 1.5
   mainLight.castShadow = true
   mainLight.shadow.bias = -0.001
+  mainLight.shadow.normalBias = 0.04
   mainLight.shadow.mapSize.width = 2048
   mainLight.shadow.mapSize.height = 2048
   mainLight.name = 'main_light'
@@ -365,7 +377,7 @@ function setupLights() {
   sceneManager.add(mainLight)
 
   // Rim light cyan — por trás-esquerda, contorno elétrico (cor da brand)
-  const rimCyan = new THREE.SpotLight(0x00e5ff, 200, 6, Math.PI * 0.04)
+  const rimCyan = new THREE.SpotLight(0x00e5ff, 65, 6, Math.PI * 0.04)
   rimCyan.position.set(-1.8, 3.5, -2.5)
   rimCyan.penumbra = 0.8
   rimCyan.decay = 1.5
@@ -373,7 +385,7 @@ function setupLights() {
   sceneManager.add(rimCyan)
 
   // Rim light laranja — por trás-direita, contorno quente (contraste quente/frio)
-  const rimOrange = new THREE.SpotLight(0xff5500, 160, 5, Math.PI * 0.05)
+  const rimOrange = new THREE.SpotLight(0xff5500, 50, 5, Math.PI * 0.05)
   rimOrange.position.set(2.2, 2.5, -2)
   rimOrange.penumbra = 0.7
   rimOrange.decay = 1.5
@@ -381,7 +393,7 @@ function setupLights() {
   sceneManager.add(rimOrange)
 
   // Fill light lateral suave — evita que o lado sombrio fique 100% preto
-  const fillLight = new THREE.SpotLight(0x1a3060, 30, 8, Math.PI * 0.2)
+  const fillLight = new THREE.SpotLight(0x1a3060, 10, 8, Math.PI * 0.2)
   fillLight.position.set(-3, 2, 2)
   fillLight.penumbra = 1.0
   fillLight.decay = 2
