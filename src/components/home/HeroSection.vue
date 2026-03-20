@@ -75,6 +75,7 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import * as THREE from 'three'
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js'
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
@@ -98,7 +99,6 @@ let camera: THREE.PerspectiveCamera
 let controls: OrbitControls
 let engine: Engine3d | null = null
 let composer: EffectComposer
-let skydome: THREE.Mesh | null = null
 
 let gui: GUI
 
@@ -158,7 +158,7 @@ async function initScene() {
 
     engine.onFrame = () => {
       controls.update()
-      if (skydome) skydome.rotation.y += 0.00012
+      sceneManager.scene.backgroundRotation.y += 0.00012
       composer.render()
     }
     engine.start()
@@ -259,29 +259,23 @@ async function loadAssets(gui: GUI) {
   const totalAssets = 4 // Ajuste conforme necessário
   const progressIncrement = 100 / totalAssets
 
-  // Background
+  // Background HDRI — fundo + reflexos nos materiais metálicos da bike
   loadPromises.push(
     new Promise<void>((resolve) => {
-      const loader = new THREE.TextureLoader()
-      loader.load(
-        'landscape1.jpg',
+      new RGBELoader().load(
+        'environment.hdr',
         (texture) => {
-          texture.colorSpace = THREE.SRGBColorSpace
-          texture.wrapS = THREE.RepeatWrapping
-
-          skydome = new THREE.Mesh(
-            new THREE.SphereGeometry(80, 64, 32),
-            new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide, depthWrite: false }),
-          )
-          skydome.renderOrder = -1
-          sceneManager.add(skydome)
-
+          texture.mapping = THREE.EquirectangularReflectionMapping
+          sceneManager.scene.background = texture
+          sceneManager.scene.environment = texture
+          sceneManager.scene.backgroundBlurriness = 0.1
+          sceneManager.scene.environmentIntensity = 0.35
           loadingProgress.value += progressIncrement
           resolve()
         },
         undefined,
         (err) => {
-          console.error('Falha ao carregar background:', err)
+          console.error('Falha ao carregar HDRI:', err)
           loadingProgress.value += progressIncrement
           resolve()
         },
