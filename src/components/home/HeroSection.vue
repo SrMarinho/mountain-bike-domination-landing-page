@@ -33,17 +33,17 @@
     <div
       class="absolute top-1/3 -translate-y-1/2 left-0 w-full lg:static lg:translate-y-0 lg:h-screen flex flex-col justify-center items-center text-white px-6 lg:px-8 gap-4 lg:gap-8 max-w-4xl lg:bg-gradient-to-r lg:from-black lg:to-transparent"
     >
-      <h1 class="flex flex-col items-center lg:items-start text-5xl sm:text-8xl lg:text-8xl font-bold">
+      <h1 ref="heroTitle" class="flex flex-col items-center lg:items-start text-5xl sm:text-8xl lg:text-8xl font-bold">
         <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-green-400"
           >DOWNHILL</span
         >
         <span class="text-white">DOMINATION</span>
       </h1>
-      <h2 class="hidden lg:block max-w-2xl text-2xl text-gray-300">
+      <h2 ref="heroSubtitle" class="hidden lg:block max-w-2xl text-2xl text-gray-300">
         Where skill meets the mountain. Experience the ultimate adrenaline rush as you conquer
         technical trails and defy gravity
       </h2>
-      <div class="flex gap-3 lg:gap-4">
+      <div ref="heroButtons" class="flex gap-3 lg:gap-4">
         <button
           class="flex justify-center items-center gap-2 py-3 px-6 lg:py-4 lg:px-8 font-bold text-lg lg:text-xl rounded-lg bg-gradient-to-r from-cyan-600 to-green-600 hover:from-cyan-500 hover:to-green-500 hover:shadow-cyan-400/30 hover:shadow-lg duration-200 hover:scale-105"
         >
@@ -56,7 +56,7 @@
           Explore trails
         </button>
       </div>
-      <div class="flex w-full justify-around">
+      <div ref="heroStats" class="flex w-full justify-around">
         <div>
           <p class="text-cyan-400 text-2xl lg:text-3xl font-bold">50+</p>
           <p class="text-gray-400 text-sm lg:text-base">Trails</p>
@@ -103,6 +103,11 @@ const isLoading = ref(true)
 const loadingProgress = ref(0)
 const loadError = ref(false)
 const needsGyroPermission = ref(false)
+
+const heroTitle = ref<HTMLElement | null>(null)
+const heroSubtitle = ref<HTMLElement | null>(null)
+const heroButtons = ref<HTMLElement | null>(null)
+const heroStats = ref<HTMLElement | null>(null)
 const sceneManager = useSceneManager()
 
 let canvas: HTMLCanvasElement | null
@@ -179,6 +184,7 @@ async function initScene() {
     loadingProgress.value = 100
 
     cameraAnimation(camera)
+    animateHeroEntrance()
 
     let lastMouseTime = 0
     mouseMoveListener = (e: MouseEvent) => {
@@ -411,6 +417,16 @@ function setupLights() {
   fillLight.decay = 2
   fillLight.target = addLightTarget(0.3, 1.87, 0)
   sceneManager.add(fillLight)
+}
+
+function animateHeroEntrance() {
+  const els = [heroTitle.value, heroSubtitle.value, heroButtons.value, heroStats.value]
+  gsap.set(els, { opacity: 0, y: 40 })
+  gsap.timeline({ delay: 0.3 })
+    .to(heroTitle.value,    { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' })
+    .to(heroSubtitle.value, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, '-=0.5')
+    .to(heroButtons.value,  { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, '-=0.4')
+    .to(heroStats.value,    { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, '-=0.3')
 }
 
 async function cameraAnimation(camera: THREE.PerspectiveCamera) {
