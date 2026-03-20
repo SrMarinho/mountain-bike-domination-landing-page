@@ -21,6 +21,15 @@
     <!-- Gradiente mobile/tablet: cobre o topo da tela de cima para baixo -->
     <div class="absolute top-0 left-0 w-full h-2/3 bg-gradient-to-b from-black to-transparent lg:hidden" />
 
+    <!-- Botão de permissão de giroscópio (iOS) -->
+    <button
+      v-if="needsGyroPermission"
+      @click="requestGyroPermission"
+      class="absolute bottom-20 left-1/2 -translate-x-1/2 z-10 px-4 py-2 text-sm border border-cyan-400 text-cyan-400 rounded-lg lg:hidden"
+    >
+      Ativar giroscópio
+    </button>
+
     <div
       class="absolute top-1/3 -translate-y-1/2 left-0 w-full lg:static lg:translate-y-0 lg:h-screen flex flex-col justify-center items-center text-white px-6 lg:px-8 gap-4 lg:gap-8 max-w-4xl lg:bg-gradient-to-r lg:from-black lg:to-transparent"
     >
@@ -94,6 +103,7 @@ import gsap from 'gsap'
 const isLoading = ref(true)
 const loadingProgress = ref(0)
 const loadError = ref(false)
+const needsGyroPermission = ref(false)
 const sceneManager = useSceneManager()
 
 let canvas: HTMLCanvasElement | null
@@ -157,7 +167,7 @@ async function initScene() {
     composer.addPass(new OutputPass())
 
     // SMAA como última passagem — antialiasing no resultado final LDR
-    composer.addPass(new SMAAPass(canvas.clientWidth, canvas.clientHeight))
+    composer.addPass(new SMAAPass())
 
     engine.onFrame = () => {
       controls.update()
@@ -184,10 +194,7 @@ async function initScene() {
     }
     document.addEventListener('mousemove', mouseMoveListener)
 
-    deviceOrientationListener = (e: DeviceOrientationEvent) => {
-      gyroscopeHandler(e, canvas!, controls)
-    }
-    window.addEventListener('deviceorientation', deviceOrientationListener, { passive: true })
+    await setupGyroscope()
 
     resizeListener = () => {
       resizeHandler(canvas!, camera, controls)
@@ -452,17 +459,48 @@ async function mouseHandler(
   controls.object.position.y = -1 * (mouseEvent.y / canvas.clientHeight) + 0.5 + 1.5
 }
 
-function gyroscopeHandler(
-  event: DeviceOrientationEvent,
-  canvas: HTMLCanvasElement,
-  controls: OrbitControls,
-) {
+async function setupGyroscope() {
+  // iOS 13+ requer permissão explícita
+  const needsPermission =
+    typeof DeviceOrientationEvent !== 'undefined' &&
+    typeof (DeviceOrientationEvent as any).requestPermission === 'function'
+
+  if (needsPermission) {
+    needsGyroPermission.value = true
+    return
+  }
+
+  attachGyroscopeListener()
+}
+
+async function requestGyroPermission() {
+  try {
+    const permission = await (DeviceOrientationEvent as any).requestPermission()
+    if (permission === 'granted') {
+      needsGyroPermission.value = false
+      attachGyroscopeListener()
+    }
+  } catch (e) {
+    console.warn('Permissão de giroscópio negada', e)
+  }
+}
+
+function attachGyroscopeListener() {
+  deviceOrientationListener = (e: DeviceOrientationEvent) => gyroscopeHandler(e)
+  window.addEventListener('deviceorientation', deviceOrientationListener, { passive: true })
+}
+
+function gyroscopeHandler(event: DeviceOrientationEvent) {
+  // gamma: inclinação lateral (-90 a 90°), positivo = tilt para direita
+  // beta: inclinação frente/trás (-180 a 180°), ~75° = celular em pé na vertical
   if (event.gamma !== null) {
-    controls.object.position.x = -0.5 * ((event.gamma * 10) / canvas.clientWidth) * 2
+    const gamma = Math.max(-30, Math.min(30, event.gamma))
+    controls.object.position.x = 0.3 - (gamma / 30) * 0.3
   }
 
   if (event.beta !== null) {
-    controls.object.position.y = -1 * ((event.beta * 10) / canvas.clientHeight) + 0.5 + 1.5
+    const beta = Math.max(45, Math.min(105, event.beta))
+    controls.object.position.y = 0.6 + ((75 - beta) / 30) * 0.2
   }
 }
 
