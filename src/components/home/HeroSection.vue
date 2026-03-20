@@ -98,6 +98,7 @@ let camera: THREE.PerspectiveCamera
 let controls: OrbitControls
 let engine: Engine3d | null = null
 let composer: EffectComposer
+let skydome: THREE.Mesh | null = null
 
 let gui: GUI
 
@@ -157,6 +158,7 @@ async function initScene() {
 
     engine.onFrame = () => {
       controls.update()
+      if (skydome) skydome.rotation.y += 0.00012
       composer.render()
     }
     engine.start()
@@ -265,7 +267,15 @@ async function loadAssets(gui: GUI) {
         'landscape1.jpg',
         (texture) => {
           texture.colorSpace = THREE.SRGBColorSpace
-          sceneManager.scene.background = texture
+          texture.wrapS = THREE.RepeatWrapping
+
+          skydome = new THREE.Mesh(
+            new THREE.SphereGeometry(80, 64, 32),
+            new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide, depthWrite: false }),
+          )
+          skydome.renderOrder = -1
+          sceneManager.add(skydome)
+
           loadingProgress.value += progressIncrement
           resolve()
         },
