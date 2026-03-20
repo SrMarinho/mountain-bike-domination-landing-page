@@ -75,6 +75,9 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import * as THREE from 'three'
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { Engine3d } from '@/libs/threejs/core/engine3d'
 import { Bike3D } from '@/libs/threejs/objects/bike'
 import { Terrain2 } from '@/libs/threejs/objects/terrain2'
@@ -92,6 +95,7 @@ let renderer: THREE.WebGLRenderer
 let camera: THREE.PerspectiveCamera
 let controls: OrbitControls
 let engine: Engine3d | null = null
+let composer: EffectComposer
 
 let gui: GUI
 
@@ -129,8 +133,22 @@ async function initScene() {
     camera = base.camera
 
     engine = new Engine3d(canvas, renderer, camera)
-    engine.rawScene = sceneManager.scene
-    engine.onFrame = () => controls.update()
+
+    composer = new EffectComposer(renderer)
+    composer.addPass(new RenderPass(sceneManager.scene, camera))
+    composer.addPass(
+      new UnrealBloomPass(
+        new THREE.Vector2(canvas.clientWidth, canvas.clientHeight),
+        0.8,
+        0.5,
+        0.6,
+      ),
+    )
+
+    engine.onFrame = () => {
+      controls.update()
+      composer.render()
+    }
     engine.start()
 
     gui = new GUI()
@@ -156,7 +174,10 @@ async function initScene() {
     }
     window.addEventListener('deviceorientation', deviceOrientationListener, { passive: true })
 
-    resizeListener = () => resizeHandler(canvas!, camera, controls)
+    resizeListener = () => {
+      resizeHandler(canvas!, camera, controls)
+      composer.setSize(canvas!.clientWidth, canvas!.clientHeight)
+    }
     window.addEventListener('resize', resizeListener)
     resizeHandler(canvas!, camera, controls)
 
@@ -185,6 +206,9 @@ function setupBaseScene() {
   renderer.setSize(canvas.clientWidth, canvas.clientHeight, false)
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
+  renderer.toneMapping = THREE.ACESFilmicToneMapping
+  renderer.toneMappingExposure = 1.1
+  renderer.outputColorSpace = THREE.SRGBColorSpace
 
   // Câmera
   camera = new THREE.PerspectiveCamera(
@@ -253,9 +277,6 @@ async function loadAssets(gui: GUI) {
       model.castShadow = true
       // controls.target.set(model.position.x - 1, model.position.y, model.position.z)
       sceneManager.add(model)
-      const objTarget = new THREE.Object3D()
-      objTarget.position.set(0, 2, 1)
-      mainLight.target = objTarget
       loadingProgress.value += progressIncrement
     }),
   )
@@ -317,51 +338,55 @@ async function loadAssets(gui: GUI) {
   await Promise.all(loadPromises)
 }
 
-// Configuração de luzes
+function addLightTarget(x: number, y: number, z: number): THREE.Object3D {
+  const target = new THREE.Object3D()
+  target.position.set(x, y, z)
+  sceneManager.scene.add(target)
+  return target
+}
+
+// Configuração de luzes — rig cinematográfico
 function setupLights() {
-  // Luz ambiente
-  const ambientLight = new THREE.AmbientLight(0x404040, 0.1)
+  // Ambiente quase negro com toque azul frio (atmosfera noturna)
+  const ambientLight = new THREE.AmbientLight(0x04091a, 1.5)
   sceneManager.add(ambientLight)
 
-  // Luz principal
-  mainLight = new THREE.SpotLight(0xffffff, 2, 0, Math.PI * 0.08)
-  mainLight.position.set(3, -5.8, 3)
-  mainLight.penumbra = 0.5
-  mainLight.decay = 1
+  // Key light — branco-frio de cima, iluminação base com sombra nítida
+  mainLight = new THREE.SpotLight(0xd0e8ff, 80, 0, Math.PI * 0.1)
+  mainLight.position.set(1.2, 5.5, 3)
+  mainLight.penumbra = 0.4
+  mainLight.decay = 1.5
   mainLight.castShadow = true
+  mainLight.shadow.bias = -0.001
+  mainLight.shadow.mapSize.width = 2048
+  mainLight.shadow.mapSize.height = 2048
   mainLight.name = 'main_light'
+  mainLight.target = addLightTarget(0.3, 1.87, 0)
   sceneManager.add(mainLight)
 
-  const mainLightTarget = new THREE.Object3D()
-  mainLightTarget.position.set(1.2, 2, 1)
-  mainLight.target = mainLightTarget
+  // Rim light cyan — por trás-esquerda, contorno elétrico (cor da brand)
+  const rimCyan = new THREE.SpotLight(0x00e5ff, 200, 6, Math.PI * 0.04)
+  rimCyan.position.set(-1.8, 3.5, -2.5)
+  rimCyan.penumbra = 0.8
+  rimCyan.decay = 1.5
+  rimCyan.target = addLightTarget(0.3, 1.87, 0)
+  sceneManager.add(rimCyan)
 
-  const mainLghtHelper = new THREE.SpotLightHelper(mainLight)
-  // sceneManager.scene.add(mainLghtHelper)
+  // Rim light laranja — por trás-direita, contorno quente (contraste quente/frio)
+  const rimOrange = new THREE.SpotLight(0xff5500, 160, 5, Math.PI * 0.05)
+  rimOrange.position.set(2.2, 2.5, -2)
+  rimOrange.penumbra = 0.7
+  rimOrange.decay = 1.5
+  rimOrange.target = addLightTarget(0.3, 1.87, 0)
+  sceneManager.add(rimOrange)
 
-  const rimLight = new THREE.SpotLight(0xffc9a9, 20, 4, Math.PI * 0.14)
-  rimLight.position.set(0.866, 3.611, -1.18)
-  const objTarget = new THREE.Object3D()
-  objTarget.position.set(0, 0, 1)
-  rimLight.target = objTarget
-  rimLight.penumbra = 0.5
-  rimLight.decay = 2
-  rimLight.castShadow = true
-
-  const rimLight2 = new THREE.SpotLight(0xffffff, 20, 6, Math.PI * 0.05)
-  rimLight2.position.set(0, 1.5, -3)
-  const objTarget2 = new THREE.Object3D()
-  objTarget2.position.set(0, 1.5, 1)
-  rimLight2.target = objTarget2
-  rimLight2.penumbra = 0.5
-  rimLight2.decay = 2
-  rimLight2.castShadow = true
-
-  const lightHelper = new THREE.SpotLightHelper(rimLight2)
-  // sceneManager.add(lightHelper)
-
-  sceneManager.add(rimLight)
-  sceneManager.add(rimLight2)
+  // Fill light lateral suave — evita que o lado sombrio fique 100% preto
+  const fillLight = new THREE.SpotLight(0x1a3060, 30, 8, Math.PI * 0.2)
+  fillLight.position.set(-3, 2, 2)
+  fillLight.penumbra = 1.0
+  fillLight.decay = 2
+  fillLight.target = addLightTarget(0.3, 1.87, 0)
+  sceneManager.add(fillLight)
 }
 
 // Controles GUI
@@ -449,6 +474,7 @@ onMounted(initScene)
 
 onUnmounted(() => {
   gui?.destroy()
+  composer?.dispose()
   engine?.dispose()
   if (mouseMoveListener) document.removeEventListener('mousemove', mouseMoveListener)
   if (deviceOrientationListener)
