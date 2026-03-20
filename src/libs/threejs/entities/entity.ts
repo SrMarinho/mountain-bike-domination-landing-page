@@ -37,4 +37,11 @@ export class Entity {
       component.update(deltaTime)
     })
   }
+
+  public dispose(): void {
+    this.components.forEach((component) => {
+      component.dispose()
+    })
+    this.components.clear()
+  }
 }

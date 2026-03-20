@@ -1,10 +1,22 @@
 <template>
-  <div class="w-full h-screen flex items-center">
+  <div class="w-full h-screen flex items-center m-0 border-0">
     <div
       class="w-full h-screen fixed bg-black text-white flex justify-center items-center z-50"
       v-if="isLoading"
     >
       Loading: {{ Math.round(loadingProgress) }}%
+    </div>
+    <div
+      class="w-full h-screen fixed bg-black text-white flex flex-col justify-center items-center gap-4 z-50"
+      v-if="loadError"
+    >
+      <p class="text-red-400 text-xl font-bold">Falha ao carregar a cena 3D</p>
+      <button
+        class="px-6 py-2 border border-cyan-400 text-cyan-400 rounded-lg hover:bg-cyan-400 hover:text-black duration-200"
+        @click="initScene"
+      >
+        Tentar novamente
+      </button>
     </div>
     <div
       class="container sm:w-full h-screen flex flex-col justify-center items-center text-white sm:px-0 md:px-4 lg:px-8 gap-8 max-w-4xl bg-gradient-to-r from-black to-transparent"
@@ -55,18 +67,20 @@
     />
 
     <canvas id="myCanvas" class="absolute w-full h-screen -z-50 bg-black" />
-    <ObjectController class="z-50" :scene="sceneManager" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import * as THREE from 'three'
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js'
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js'
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js'
+import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js'
 import { Engine3d } from '@/libs/threejs/core/engine3d'
 import { Bike3D } from '@/libs/threejs/objects/bike'
 import { Terrain2 } from '@/libs/threejs/objects/terrain2'
@@ -74,20 +88,25 @@ import { useSceneManager } from '@/composables/sceneManager'
 import { PlayIcon, ChevronDownIcon } from '@heroicons/vue/24/outline'
 import gsap from 'gsap'
 
-// Estados reativos
 const isLoading = ref(true)
 const loadingProgress = ref(0)
+const loadError = ref(false)
 const sceneManager = useSceneManager()
 
 let canvas: HTMLCanvasElement | null
 let renderer: THREE.WebGLRenderer
 let camera: THREE.PerspectiveCamera
-let composer: EffectComposer
 let controls: OrbitControls
+let engine: Engine3d | null = null
+let composer: EffectComposer
 
 let gui: GUI
 
 let mainLight: THREE.SpotLight
+
+let mouseMoveListener: ((e: MouseEvent) => void) | null = null
+let deviceOrientationListener: ((e: DeviceOrientationEvent) => void) | null = null
+let resizeListener: (() => void) | null = null
 
 // Configurações
 const sceneConfig = {
@@ -106,55 +125,80 @@ const sceneConfig = {
 
 // Inicialização principal
 async function initScene() {
+  loadError.value = false
+  isLoading.value = true
+  loadingProgress.value = 0
+
   try {
-    const { renderer, camera, composer, controls } = setupBaseScene()
-    const engine = new Engine3d(
-      renderer.domElement,
-      sceneManager.scene,
-      renderer,
-      camera,
-      composer,
-      controls,
+    const base = setupBaseScene()
+    canvas = base.canvas
+    renderer = base.renderer
+    camera = base.camera
+
+    engine = new Engine3d(canvas, renderer, camera)
+
+    composer = new EffectComposer(renderer)
+    composer.addPass(new RenderPass(sceneManager.scene, camera))
+
+    // Bloom opera em HDR linear — threshold alto para só afetar reflexos especulares
+    composer.addPass(
+      new UnrealBloomPass(
+        new THREE.Vector2(canvas.clientWidth, canvas.clientHeight),
+        0.35,  // strength  — sutil
+        0.35,  // radius    — spread apertado
+        0.88,  // threshold — apenas os picos de especular
+      ),
     )
 
+    // OutputPass aplica ACES tone mapping e conversão de color space
+    composer.addPass(new OutputPass())
+
+    // SMAA como última passagem — antialiasing no resultado final LDR
+    composer.addPass(new SMAAPass(canvas.clientWidth, canvas.clientHeight))
+
+    engine.onFrame = () => {
+      controls.update()
+      sceneManager.scene.backgroundRotation.y += 0.00012
+      composer.render()
+    }
     engine.start()
 
     gui = new GUI()
 
-    onUnmounted(() => gui.destroy())
-
-    // Carregamento assíncrono de assets
     await loadAssets(gui)
 
-    // Finalização
     isLoading.value = false
     loadingProgress.value = 100
 
     cameraAnimation(camera)
 
-    window.addEventListener(
-      'deviceorientation',
-      (e) => {
-        gyroscopeHandler(e, canvas!, controls)
-      },
-      { passive: true },
-    )
-
-    document.addEventListener('mousemove', (e) => {
+    let lastMouseTime = 0
+    mouseMoveListener = (e: MouseEvent) => {
+      const now = Date.now()
+      if (now - lastMouseTime < 16) return
+      lastMouseTime = now
       mouseHandler(e, canvas!, controls)
-    })
+    }
+    document.addEventListener('mousemove', mouseMoveListener)
+
+    deviceOrientationListener = (e: DeviceOrientationEvent) => {
+      gyroscopeHandler(e, canvas!, controls)
+    }
+    window.addEventListener('deviceorientation', deviceOrientationListener, { passive: true })
+
+    resizeListener = () => {
+      resizeHandler(canvas!, camera, controls)
+      composer.setSize(canvas!.clientWidth, canvas!.clientHeight)
+    }
+    window.addEventListener('resize', resizeListener)
+    resizeHandler(canvas!, camera, controls)
 
     setupGuiControls('camera', gui, camera)
     gui.show(false)
-
-    window.addEventListener('resize', () => {
-      resizeHandler(canvas!, camera, controls)
-    })
-    resizeHandler(canvas!, camera, controls)
-    // gui.hide()
   } catch (error) {
     console.error('Erro ao inicializar cena:', error)
     isLoading.value = false
+    loadError.value = true
   }
 }
 
@@ -171,9 +215,13 @@ function setupBaseScene() {
     powerPreference: 'high-performance',
   })
   renderer.setClearColor(0x000000, 0)
-  renderer.setSize(canvas.clientWidth, canvas.clientHeight)
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  renderer.setSize(canvas.clientWidth, canvas.clientHeight, false)
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
+  renderer.toneMapping = THREE.ACESFilmicToneMapping
+  renderer.toneMappingExposure = 0.9
+  renderer.outputColorSpace = THREE.SRGBColorSpace
 
   // Câmera
   camera = new THREE.PerspectiveCamera(
@@ -185,18 +233,6 @@ function setupBaseScene() {
   camera.name = 'camera'
   camera.position.copy(sceneConfig.camera.position)
   sceneManager.add(camera)
-
-  // Efeitos pós-processamento
-  composer = new EffectComposer(renderer)
-  composer.addPass(new RenderPass(sceneManager.scene, camera))
-
-  const bloomPass = new UnrealBloomPass(
-    new THREE.Vector2(window.innerWidth, window.innerHeight),
-    sceneConfig.bloomParams.strength,
-    sceneConfig.bloomParams.radius,
-    sceneConfig.bloomParams.threshold,
-  )
-  composer.addPass(bloomPass)
 
   // Controles
   controls = new OrbitControls(camera, canvas)
@@ -214,7 +250,7 @@ function setupBaseScene() {
     RIGHT: '',
   }
 
-  return { renderer, camera, composer, controls }
+  return { canvas, renderer, camera }
 }
 
 // Carregamento de assets
@@ -223,16 +259,32 @@ async function loadAssets(gui: GUI) {
   const totalAssets = 4 // Ajuste conforme necessário
   const progressIncrement = 100 / totalAssets
 
-  // Background
+  // Background HDRI — fundo + reflexos nos materiais metálicos da bike
   loadPromises.push(
-    new Promise((resolve) => {
-      const loader = new THREE.TextureLoader()
-      loader.load('landscape1.jpg', (texture) => {
-        texture.colorSpace = THREE.SRGBColorSpace
-        sceneManager.scene.background = texture
-        loadingProgress.value += progressIncrement
-        resolve()
-      })
+    new Promise<void>((resolve) => {
+      new RGBELoader().load(
+        'environment.hdr',
+        (texture) => {
+          texture.mapping = THREE.EquirectangularReflectionMapping
+          sceneManager.scene.background = texture
+          sceneManager.scene.environment = texture
+          sceneManager.scene.backgroundBlurriness = 0.1
+          sceneManager.scene.environmentIntensity = 0.35
+          loadingProgress.value += progressIncrement
+          resolve()
+        },
+        undefined,
+        () => {
+          // fallback: landscape1.jpg até o environment.hdr ser adicionado em /public
+          new THREE.TextureLoader().load('landscape1.jpg', (tex) => {
+            tex.colorSpace = THREE.SRGBColorSpace
+            tex.mapping = THREE.EquirectangularReflectionMapping
+            sceneManager.scene.background = tex
+          })
+          loadingProgress.value += progressIncrement
+          resolve()
+        },
+      )
     }),
   )
 
@@ -245,9 +297,6 @@ async function loadAssets(gui: GUI) {
       model.castShadow = true
       // controls.target.set(model.position.x - 1, model.position.y, model.position.z)
       sceneManager.add(model)
-      const objTarget = new THREE.Object3D()
-      objTarget.position.set(0, 2, 1)
-      mainLight.target = objTarget
       loadingProgress.value += progressIncrement
     }),
   )
@@ -270,27 +319,36 @@ async function loadAssets(gui: GUI) {
       const geometry = new THREE.PlaneGeometry(10, 5, 100, 20)
       const textureLoader = new THREE.TextureLoader()
 
-      textureLoader.load('sky_bg.jpg', (texture) => {
-        texture.wrapS = THREE.RepeatWrapping
-        texture.wrapT = THREE.RepeatWrapping
-        texture.repeat.set(1, 1)
+      textureLoader.load(
+        'sky_bg.jpg',
+        (texture) => {
+          texture.wrapS = THREE.RepeatWrapping
+          texture.wrapT = THREE.RepeatWrapping
+          texture.repeat.set(1, 1)
 
-        const material = new THREE.MeshStandardMaterial({
-          map: texture,
-          side: THREE.DoubleSide,
-          normalMap: texture,
-          color: 0xffffff,
-        })
+          const material = new THREE.MeshStandardMaterial({
+            map: texture,
+            side: THREE.DoubleSide,
+            normalMap: texture,
+            color: 0xffffff,
+          })
 
-        const curvedPlane = new THREE.Mesh(geometry, material)
-        curvedPlane.position.set(0, 4.6, -4.02)
-        curvedPlane.rotation.set(0.26, 0, 0)
-        curvedPlane.scale.set(3, 3, 3)
-        // sceneManager.add(curvedPlane)
+          const curvedPlane = new THREE.Mesh(geometry, material)
+          curvedPlane.position.set(0, 4.6, -4.02)
+          curvedPlane.rotation.set(0.26, 0, 0)
+          curvedPlane.scale.set(3, 3, 3)
+          // sceneManager.add(curvedPlane)
 
-        loadingProgress.value += progressIncrement
-        resolve()
-      })
+          loadingProgress.value += progressIncrement
+          resolve()
+        },
+        undefined,
+        (err) => {
+          console.error('Falha ao carregar sky_bg:', err)
+          loadingProgress.value += progressIncrement
+          resolve()
+        },
+      )
     }),
   )
 
@@ -300,51 +358,56 @@ async function loadAssets(gui: GUI) {
   await Promise.all(loadPromises)
 }
 
-// Configuração de luzes
+function addLightTarget(x: number, y: number, z: number): THREE.Object3D {
+  const target = new THREE.Object3D()
+  target.position.set(x, y, z)
+  sceneManager.scene.add(target)
+  return target
+}
+
+// Configuração de luzes — rig cinematográfico
 function setupLights() {
-  // Luz ambiente
-  const ambientLight = new THREE.AmbientLight(0x404040, 0.1)
+  // Ambiente quase negro com toque azul frio (atmosfera noturna)
+  const ambientLight = new THREE.AmbientLight(0x04091a, 1.5)
   sceneManager.add(ambientLight)
 
-  // Luz principal
-  mainLight = new THREE.SpotLight(0xffffff, 2, 0, Math.PI * 0.08)
-  mainLight.position.set(3, -5.8, 3)
+  // Key light — branco-frio de cima, iluminação base com sombra nítida
+  mainLight = new THREE.SpotLight(0xd0e8ff, 25, 0, Math.PI * 0.1)
+  mainLight.position.set(1.2, 5.5, 3)
   mainLight.penumbra = 0.5
-  mainLight.decay = 1
+  mainLight.decay = 1.5
   mainLight.castShadow = true
+  mainLight.shadow.bias = -0.001
+  mainLight.shadow.normalBias = 0.04
+  mainLight.shadow.mapSize.width = 2048
+  mainLight.shadow.mapSize.height = 2048
   mainLight.name = 'main_light'
+  mainLight.target = addLightTarget(0.3, 1.87, 0)
   sceneManager.add(mainLight)
 
-  const mainLightTarget = new THREE.Object3D()
-  mainLightTarget.position.set(1.2, 2, 1)
-  mainLight.target = mainLightTarget
+  // Rim light cyan — por trás-esquerda, contorno elétrico (cor da brand)
+  const rimCyan = new THREE.SpotLight(0x00e5ff, 65, 6, Math.PI * 0.04)
+  rimCyan.position.set(-1.8, 3.5, -2.5)
+  rimCyan.penumbra = 0.8
+  rimCyan.decay = 1.5
+  rimCyan.target = addLightTarget(0.3, 1.87, 0)
+  sceneManager.add(rimCyan)
 
-  const mainLghtHelper = new THREE.SpotLightHelper(mainLight)
-  // sceneManager.scene.add(mainLghtHelper)
+  // Rim light laranja — por trás-direita, contorno quente (contraste quente/frio)
+  const rimOrange = new THREE.SpotLight(0xff5500, 50, 5, Math.PI * 0.05)
+  rimOrange.position.set(2.2, 2.5, -2)
+  rimOrange.penumbra = 0.7
+  rimOrange.decay = 1.5
+  rimOrange.target = addLightTarget(0.3, 1.87, 0)
+  sceneManager.add(rimOrange)
 
-  const rimLight = new THREE.SpotLight(0xffc9a9, 20, 4, Math.PI * 0.14)
-  rimLight.position.set(0.866, 3.611, -1.18)
-  const objTarget = new THREE.Object3D()
-  objTarget.position.set(0, 0, 1)
-  rimLight.target = objTarget
-  rimLight.penumbra = 0.5
-  rimLight.decay = 2
-  rimLight.castShadow = true
-
-  const rimLight2 = new THREE.SpotLight(0xffffff, 20, 6, Math.PI * 0.05)
-  rimLight2.position.set(0, 1.5, -3)
-  const objTarget2 = new THREE.Object3D()
-  objTarget2.position.set(0, 1.5, 1)
-  rimLight2.target = objTarget2
-  rimLight2.penumbra = 0.5
-  rimLight2.decay = 2
-  rimLight2.castShadow = true
-
-  const lightHelper = new THREE.SpotLightHelper(rimLight2)
-  // sceneManager.add(lightHelper)
-
-  sceneManager.add(rimLight)
-  sceneManager.add(rimLight2)
+  // Fill light lateral suave — evita que o lado sombrio fique 100% preto
+  const fillLight = new THREE.SpotLight(0x1a3060, 10, 8, Math.PI * 0.2)
+  fillLight.position.set(-3, 2, 2)
+  fillLight.penumbra = 1.0
+  fillLight.decay = 2
+  fillLight.target = addLightTarget(0.3, 1.87, 0)
+  sceneManager.add(fillLight)
 }
 
 // Controles GUI
@@ -391,19 +454,13 @@ function gyroscopeHandler(
   canvas: HTMLCanvasElement,
   controls: OrbitControls,
 ) {
-  const update = () => {
-    if (event.gamma !== null) {
-      controls.object.position.x = -0.5 * ((event.gamma * 10) / canvas.clientWidth) * 2
-    }
-
-    if (event.beta !== null) {
-      controls.object.position.y = -1 * ((event.beta * 10) / canvas.clientHeight) + 0.5 + 1.5
-    }
-
-    requestAnimationFrame(update)
+  if (event.gamma !== null) {
+    controls.object.position.x = -0.5 * ((event.gamma * 10) / canvas.clientWidth) * 2
   }
 
-  update()
+  if (event.beta !== null) {
+    controls.object.position.y = -1 * ((event.beta * 10) / canvas.clientHeight) + 0.5 + 1.5
+  }
 }
 
 function lerp(x0: number, y0: number, x1: number, y1: number, x: number) {
@@ -434,7 +491,21 @@ async function resizeHandler(
   })
 }
 
+watch(isLoading, (loading) => {
+  document.body.style.overflow = loading ? 'hidden' : ''
+}, { immediate: true })
+
 onMounted(initScene)
+
+onUnmounted(() => {
+  gui?.destroy()
+  composer?.dispose()
+  engine?.dispose()
+  if (mouseMoveListener) document.removeEventListener('mousemove', mouseMoveListener)
+  if (deviceOrientationListener)
+    window.removeEventListener('deviceorientation', deviceOrientationListener)
+  if (resizeListener) window.removeEventListener('resize', resizeListener)
+})
 </script>
 
 <style scoped></style>
