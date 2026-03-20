@@ -71,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import * as THREE from 'three'
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
@@ -490,6 +490,10 @@ async function resizeHandler(
     duration: 0,
   })
 }
+
+watch(isLoading, (loading) => {
+  document.body.style.overflow = loading ? 'hidden' : ''
+}, { immediate: true })
 
 onMounted(initScene)
 
