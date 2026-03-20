@@ -274,8 +274,13 @@ async function loadAssets(gui: GUI) {
           resolve()
         },
         undefined,
-        (err) => {
-          console.error('Falha ao carregar HDRI:', err)
+        () => {
+          // fallback: landscape1.jpg até o environment.hdr ser adicionado em /public
+          new THREE.TextureLoader().load('landscape1.jpg', (tex) => {
+            tex.colorSpace = THREE.SRGBColorSpace
+            tex.mapping = THREE.EquirectangularReflectionMapping
+            sceneManager.scene.background = tex
+          })
           loadingProgress.value += progressIncrement
           resolve()
         },
