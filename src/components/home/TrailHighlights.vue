@@ -1,7 +1,7 @@
 <!-- eslint-disable prefer-const -->
 <template>
   <div class="container mx-auto">
-    <div class="text-center mb-12">
+    <div ref="sectionTitle" class="text-center mb-12">
       <!-- Title -->
       <h2
         class="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-green-400 mb-6"
@@ -73,7 +73,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+
+gsap.registerPlugin(ScrollTrigger)
 import type { Trail } from '@/types/Trail'
 import { TrailDifficulty } from '@/types/trail_difficulty'
 import TrailCard from '../ui/TrailCard.vue'
@@ -150,6 +154,17 @@ const trailFiltered = computed(() => {
 function setTrailFilter(difficulty: TrailDifficulty) {
   trailFilterSelected.value = difficulty
 }
+
+const sectionTitle = ref<HTMLElement | null>(null)
+
+onMounted(() => {
+  gsap.fromTo(
+    sectionTitle.value,
+    { opacity: 0, y: 50 },
+    { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out',
+      scrollTrigger: { trigger: sectionTitle.value, start: 'top 85%' } },
+  )
+})
 </script>
 
 <style scoped></style>
