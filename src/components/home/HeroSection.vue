@@ -1,10 +1,30 @@
 <template>
   <div class="w-full h-screen relative flex lg:items-center m-0 border-0">
     <div
-      class="w-full h-screen fixed bg-black text-white flex justify-center items-center z-50"
-      v-if="isLoading"
+      ref="loadingOverlay"
+      class="w-full h-screen fixed bg-black text-white flex flex-col justify-center items-center gap-10 z-50"
+      v-show="showOverlay"
     >
-      Loading: {{ Math.round(loadingProgress) }}%
+      <div ref="loadingContent" class="flex flex-col items-center gap-1">
+        <h1 class="text-5xl sm:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-green-400">
+          DOWNHILL
+        </h1>
+        <h1 class="text-5xl sm:text-7xl font-bold text-white tracking-widest">
+          DOMINATION
+        </h1>
+      </div>
+
+      <div ref="loadingBar" class="flex flex-col items-center gap-3 w-56 sm:w-72">
+        <div class="w-full h-px bg-gray-800 rounded-full overflow-hidden">
+          <div
+            class="h-full bg-gradient-to-r from-cyan-500 to-green-500 transition-all duration-300 ease-out"
+            :style="{ width: loadingProgress + '%' }"
+          />
+        </div>
+        <p class="text-gray-600 text-xs tracking-[0.3em] uppercase">
+          {{ Math.round(loadingProgress) }}%
+        </p>
+      </div>
     </div>
     <div
       class="w-full h-screen fixed bg-black text-white flex flex-col justify-center items-center gap-4 z-50"
@@ -33,17 +53,17 @@
     <div
       class="absolute top-1/3 -translate-y-1/2 left-0 w-full lg:static lg:translate-y-0 lg:h-screen flex flex-col justify-center items-center text-white px-6 lg:px-8 gap-4 lg:gap-8 max-w-4xl lg:bg-gradient-to-r lg:from-black lg:to-transparent"
     >
-      <h1 class="flex flex-col items-center lg:items-start text-5xl sm:text-8xl lg:text-8xl font-bold">
+      <h1 ref="heroTitle" class="flex flex-col items-center lg:items-start text-5xl sm:text-8xl lg:text-8xl font-bold">
         <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-green-400"
           >DOWNHILL</span
         >
         <span class="text-white">DOMINATION</span>
       </h1>
-      <h2 class="hidden lg:block max-w-2xl text-2xl text-gray-300">
+      <h2 ref="heroSubtitle" class="hidden lg:block max-w-2xl text-2xl text-gray-300">
         Where skill meets the mountain. Experience the ultimate adrenaline rush as you conquer
         technical trails and defy gravity
       </h2>
-      <div class="flex gap-3 lg:gap-4">
+      <div ref="heroButtons" class="flex gap-3 lg:gap-4">
         <button
           class="flex justify-center items-center gap-2 py-3 px-6 lg:py-4 lg:px-8 font-bold text-lg lg:text-xl rounded-lg bg-gradient-to-r from-cyan-600 to-green-600 hover:from-cyan-500 hover:to-green-500 hover:shadow-cyan-400/30 hover:shadow-lg duration-200 hover:scale-105"
         >
@@ -56,7 +76,7 @@
           Explore trails
         </button>
       </div>
-      <div class="flex w-full justify-around">
+      <div ref="heroStats" class="flex w-full justify-around">
         <div>
           <p class="text-cyan-400 text-2xl lg:text-3xl font-bold">50+</p>
           <p class="text-gray-400 text-sm lg:text-base">Trails</p>
@@ -100,9 +120,18 @@ import { PlayIcon, ChevronDownIcon } from '@heroicons/vue/24/outline'
 import gsap from 'gsap'
 
 const isLoading = ref(true)
+const showOverlay = ref(true)
 const loadingProgress = ref(0)
 const loadError = ref(false)
 const needsGyroPermission = ref(false)
+
+const heroTitle = ref<HTMLElement | null>(null)
+const heroSubtitle = ref<HTMLElement | null>(null)
+const heroButtons = ref<HTMLElement | null>(null)
+const heroStats = ref<HTMLElement | null>(null)
+const loadingOverlay = ref<HTMLElement | null>(null)
+const loadingContent = ref<HTMLElement | null>(null)
+const loadingBar = ref<HTMLElement | null>(null)
 const sceneManager = useSceneManager()
 
 let canvas: HTMLCanvasElement | null
@@ -174,11 +203,18 @@ async function initScene() {
     engine.start()
 
     await loadAssets()
-
-    isLoading.value = false
     loadingProgress.value = 100
 
-    cameraAnimation(camera)
+    // Configura resize e posiciona câmera corretamente ANTES do reveal
+    resizeListener = () => {
+      resizeHandler(canvas!, camera, controls)
+      composer.setSize(canvas!.clientWidth, canvas!.clientHeight)
+    }
+    window.addEventListener('resize', resizeListener)
+    resizeHandler(canvas!, camera, controls)
+
+    // Reveal anima a câmera do céu — deve ser chamado após o resize
+    revealScene()
 
     let lastMouseTime = 0
     mouseMoveListener = (e: MouseEvent) => {
@@ -190,13 +226,6 @@ async function initScene() {
     document.addEventListener('mousemove', mouseMoveListener)
 
     await setupGyroscope()
-
-    resizeListener = () => {
-      resizeHandler(canvas!, camera, controls)
-      composer.setSize(canvas!.clientWidth, canvas!.clientHeight)
-    }
-    window.addEventListener('resize', resizeListener)
-    resizeHandler(canvas!, camera, controls)
 
   } catch (error) {
     console.error('Erro ao inicializar cena:', error)
@@ -298,8 +327,8 @@ async function loadAssets() {
       model.position.set(0.3, 1.87, -0.016)
       model.rotation.set(-0.1, 3.6, 0)
       model.castShadow = true
-      // controls.target.set(model.position.x - 1, model.position.y, model.position.z)
       sceneManager.add(model)
+
       loadingProgress.value += progressIncrement
     }),
   )
@@ -413,17 +442,62 @@ function setupLights() {
   sceneManager.add(fillLight)
 }
 
-async function cameraAnimation(camera: THREE.PerspectiveCamera) {
-  gsap.to(camera.rotation, {
-    z: Math.PI,
-    duration: 1,
-    ease: 'power4.inOut',
-    delay: 0.1, // substitui o stagger quando são dois tweens separados
-    onUpdate: () => {
-      camera.updateProjectionMatrix()
-      controls.update()
-    },
-  })
+function revealScene() {
+  const els = [heroTitle.value, heroSubtitle.value, heroButtons.value, heroStats.value]
+  gsap.set(els, { opacity: 0, y: 40 })
+
+  // Posiciona câmera no céu ANTES do overlay começar a desbotar
+  // para que quando a cena aparecer, a câmera já esteja no ponto correto
+  const isMobile = window.innerWidth < 768
+  const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024
+  const lookY = isMobile || isTablet ? 2.8 : 1.87
+  const lookX = isMobile || isTablet
+    ? 0.3
+    : lerp(1024, -0.3, 1590, -0.7, Math.min(window.innerWidth, 1590))
+  controls.target.set(lookX, lookY + 6, -0.016)
+  controls.update()
+
+  gsap.timeline()
+    // Conteúdo da loading sobe e some
+    .to([loadingContent.value, loadingBar.value], {
+      opacity: 0,
+      y: -40,
+      duration: 0.5,
+      ease: 'power3.in',
+      stagger: 0.08,
+    })
+    // Overlay desbota revelando a cena (câmera já está no céu)
+    .to(loadingOverlay.value, {
+      opacity: 0,
+      duration: 0.9,
+      ease: 'power2.inOut',
+      onComplete: () => {
+        isLoading.value = false
+        showOverlay.value = false
+      },
+    }, '-=0.1')
+    // Câmera tilta do céu para a bike após o overlay sumir
+    .add(() => {
+      gsap.to(controls.target, {
+        y: lookY,
+        duration: 2.2,
+        ease: 'power3.inOut',
+        onUpdate: () => { controls.update() },
+      })
+    }, '-=0.2')
+    // Hero text entra em cascata
+    .to(heroTitle.value,    { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }, '+=0.1')
+    .to(heroSubtitle.value, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, '-=0.5')
+    .to(heroButtons.value,  { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, '-=0.4')
+    .to(heroStats.value,    { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, '-=0.3')
+}
+
+function animateHeroEntrance() {
+  // Mantido para compatibilidade futura (não utilizado no fluxo principal)
+}
+
+function cameraAnimation() {
+  // Não utilizado diretamente — lógica embutida em revealScene()
 }
 
 async function mouseHandler(
@@ -520,8 +594,8 @@ async function resizeHandler(
   }
 }
 
-watch(isLoading, (loading) => {
-  document.body.style.overflow = loading ? 'hidden' : ''
+watch(showOverlay, (visible) => {
+  document.body.style.overflow = visible ? 'hidden' : ''
 }, { immediate: true })
 
 onMounted(initScene)

@@ -1,7 +1,7 @@
 <template>
   <div class="container mx-auto px-6">
     <!-- Title -->
-    <div class="text-center mb-16">
+    <div ref="sectionTitle" class="text-center mb-16">
       <h2
         class="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-green-400 mb-6"
       >
@@ -14,6 +14,7 @@
     </div>
     <!-- Content -->
     <div
+      ref="sectionContent"
       class="container mx-auto lg:max-w-7xl text-white grid lg:grid-cols-2 gap-8 justify-center items-center"
     >
       <div class="flex flex-col gap-6">
@@ -93,7 +94,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, type Ref } from 'vue'
+import { ref, onMounted, type Ref } from 'vue'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+
+gsap.registerPlugin(ScrollTrigger)
 
 class Component {
   constructor(
@@ -137,6 +142,24 @@ const components: Array<Component> = [
 
 // eslint-disable-next-line prefer-const
 let currentComponent: Ref = ref(0)
+
+const sectionTitle = ref<HTMLElement | null>(null)
+const sectionContent = ref<HTMLElement | null>(null)
+
+onMounted(() => {
+  gsap.fromTo(
+    sectionTitle.value,
+    { opacity: 0, y: 50 },
+    { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out',
+      scrollTrigger: { trigger: sectionTitle.value, start: 'top 85%' } },
+  )
+  gsap.fromTo(
+    sectionContent.value,
+    { opacity: 0, y: 60 },
+    { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out', delay: 0.15,
+      scrollTrigger: { trigger: sectionContent.value, start: 'top 85%' } },
+  )
+})
 </script>
 
 <style scoped></style>

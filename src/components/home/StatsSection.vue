@@ -1,7 +1,7 @@
 <template>
   <div class="container mx-auto px-12">
     <!-- Title -->
-    <div class="text-center mb-16">
+    <div ref="sectionTitle" class="text-center mb-16">
       <h2
         class="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-green-400 mb-6"
       >
@@ -11,7 +11,7 @@
         The ultimate destination for downhill mountain biking enthusiasts worldwide
       </p>
     </div>
-    <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+    <div ref="statsGrid" class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
       <div
         v-for="(stat, index) in stats"
         :key="index"
@@ -24,7 +24,7 @@
         <div
           class="text-4xl font-bold text-white mb-2 group-hover:text-cyan-400 transition-colors duration-300"
         >
-          {{ stat.number }}
+          {{ stat.display }}
         </div>
         <h3 class="text-xl font-semibold text-gray-300 mb-2">{{ stat.label }}</h3>
         <p class="text-gray-400 text-sm leading-relaxed">{{ stat.description }}</p>
@@ -47,38 +47,60 @@
   </div>
 </template>
 <script setup lang="ts">
+import { ref, onMounted } from 'vue'
 import {
   ArrowTrendingUpIcon,
   MapPinIcon,
   RocketLaunchIcon,
   UsersIcon,
 } from '@heroicons/vue/24/outline'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
-const stats = [
-  {
-    image: MapPinIcon,
-    number: '50+',
-    label: 'Epic Trails',
-    description: 'From beginner-friendly to expert-only death drops',
-  },
-  {
-    image: UsersIcon,
-    number: '10K+',
-    label: 'Active Riders',
-    description: 'Join the growing community of downhill enthusiasts',
-  },
-  {
-    image: ArrowTrendingUpIcon,
-    number: '2000m',
-    label: 'Max Vertical',
-    description: 'Experience the ultimate gravity-fed adrenaline rush',
-  },
-  {
-    image: RocketLaunchIcon,
-    number: '25+',
-    label: 'Pro Events',
-    description: 'Host to world-class downhill competitions',
-  },
-]
+gsap.registerPlugin(ScrollTrigger)
+
+const sectionTitle = ref<HTMLElement | null>(null)
+const statsGrid = ref<HTMLElement | null>(null)
+
+const stats = ref([
+  { image: MapPinIcon,         target: 50,   suffix: '+',  display: '0',    label: 'Epic Trails',    description: 'From beginner-friendly to expert-only death drops' },
+  { image: UsersIcon,          target: 10,   suffix: 'K+', display: '0',    label: 'Active Riders',  description: 'Join the growing community of downhill enthusiasts' },
+  { image: ArrowTrendingUpIcon,target: 2000, suffix: 'm',  display: '0',    label: 'Max Vertical',   description: 'Experience the ultimate gravity-fed adrenaline rush' },
+  { image: RocketLaunchIcon,   target: 25,   suffix: '+',  display: '0',    label: 'Pro Events',     description: 'Host to world-class downhill competitions' },
+])
+
+onMounted(() => {
+  gsap.fromTo(
+    sectionTitle.value,
+    { opacity: 0, y: 50 },
+    { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out',
+      scrollTrigger: { trigger: sectionTitle.value, start: 'top 85%' } },
+  )
+
+  ScrollTrigger.create({
+    trigger: statsGrid.value,
+    start: 'top 80%',
+    once: true,
+    onEnter: () => {
+      stats.value.forEach((stat) => {
+        const counter = { val: 0 }
+        gsap.to(counter, {
+          val: stat.target,
+          duration: 2,
+          ease: 'power2.out',
+          onUpdate: () => {
+            stat.display = Math.round(counter.val) + stat.suffix
+          },
+        })
+      })
+
+      gsap.fromTo(
+        statsGrid.value!.children,
+        { opacity: 0, y: 40 },
+        { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out', stagger: 0.15 },
+      )
+    },
+  })
+})
 </script>
 <style scoped></style>

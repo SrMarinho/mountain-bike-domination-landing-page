@@ -1,6 +1,6 @@
 <template>
   <div
-    class="group h-full grow bg-gray-400/40 rounded-xl text-white overflow-hidden backdrop-blur-sm transform hover:scale-105 hover:-translate-y-2 transition-all duration-500 hover:shadow-2xl hover:shadow-cyan-500/25"
+    class="trail-card group h-full grow bg-gray-400/40 rounded-xl text-white overflow-hidden backdrop-blur-sm transform hover:scale-105 hover:-translate-y-2 transition-all duration-500 hover:shadow-2xl hover:shadow-cyan-500/25"
     :class="{
       'bg-green-400/10': trail.difficulty === TrailDifficulty.Beginner,
       'bg-yellow-400/10': trail.difficulty === TrailDifficulty.Intermediate,

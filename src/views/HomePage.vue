@@ -18,7 +18,7 @@
 
     <!-- CTA Section -->
     <section class="relative py-20 bg-gradient-to-t from-black to-gray-900">
-      <div class="container mx-auto px-6 text-center">
+      <div ref="ctaSection" class="container mx-auto px-6 text-center">
         <h2
           class="text-5xl font-bold mb-6 bg-gradient-to-r from-cyan-400 to-green-400 bg-clip-text text-transparent"
         >
@@ -39,10 +39,26 @@
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import HeroSection from '@/components/home/HeroSection.vue'
 import CustomizeBike from '@/components/home/CustomizeBike.vue'
 import TrailHighlights from '@/components/home/TrailHighlights.vue'
 import StatsSection from '@/components/home/StatsSection.vue'
+
+gsap.registerPlugin(ScrollTrigger)
+
+const ctaSection = ref<HTMLElement | null>(null)
+
+onMounted(() => {
+  gsap.fromTo(
+    ctaSection.value,
+    { opacity: 0, y: 50 },
+    { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out',
+      scrollTrigger: { trigger: ctaSection.value, start: 'top 85%' } },
+  )
+})
 </script>
 
 <style></style>
