@@ -444,6 +444,17 @@ function revealScene() {
   const els = [heroTitle.value, heroSubtitle.value, heroButtons.value, heroStats.value]
   gsap.set(els, { opacity: 0, y: 40 })
 
+  // Posiciona câmera no céu ANTES do overlay começar a desbotar
+  // para que quando a cena aparecer, a câmera já esteja no ponto correto
+  const isMobile = window.innerWidth < 768
+  const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024
+  const lookY = isMobile || isTablet ? 2.8 : 1.87
+  const lookX = isMobile || isTablet
+    ? 0.3
+    : lerp(1024, -0.3, 1590, -0.7, Math.min(window.innerWidth, 1590))
+  controls.target.set(lookX, lookY + 6, -0.016)
+  controls.update()
+
   gsap.timeline()
     // Conteúdo da loading sobe e some
     .to([loadingContent.value, loadingBar.value], {
@@ -453,7 +464,7 @@ function revealScene() {
       ease: 'power3.in',
       stagger: 0.08,
     })
-    // Overlay desbota revelando a cena
+    // Overlay desbota revelando a cena (câmera já está no céu)
     .to(loadingOverlay.value, {
       opacity: 0,
       duration: 0.9,
@@ -463,8 +474,15 @@ function revealScene() {
         showOverlay.value = false
       },
     }, '-=0.1')
-    // Câmera tilta do céu para a bike
-    .add(() => cameraAnimation(), '-=0.5')
+    // Câmera tilta do céu para a bike após o overlay sumir
+    .add(() => {
+      gsap.to(controls.target, {
+        y: lookY,
+        duration: 2.2,
+        ease: 'power3.inOut',
+        onUpdate: () => { controls.update() },
+      })
+    }, '-=0.2')
     // Hero text entra em cascata
     .to(heroTitle.value,    { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }, '+=0.1')
     .to(heroSubtitle.value, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, '-=0.5')
@@ -477,24 +495,7 @@ function animateHeroEntrance() {
 }
 
 function cameraAnimation() {
-  const isMobile = window.innerWidth < 768
-  const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024
-
-  const lookY = isMobile || isTablet ? 2.8 : 1.87
-  const lookX = isMobile || isTablet
-    ? 0.3
-    : lerp(1024, -0.3, 1590, -0.7, Math.min(window.innerWidth, 1590))
-
-  // Começa olhando para o céu, desce até a bike
-  controls.target.set(lookX, lookY + 6, -0.016)
-  controls.update()
-
-  gsap.to(controls.target, {
-    y: lookY,
-    duration: 2.2,
-    ease: 'power3.inOut',
-    onUpdate: () => { controls.update() },
-  })
+  // Não utilizado diretamente — lógica embutida em revealScene()
 }
 
 async function mouseHandler(
