@@ -14,11 +14,12 @@ Landing page interativa para uma plataforma de mountain bike downhill, com cena 
 
 ## Funcionalidades
 
-- **Cena 3D interativa** — modelo de mountain bike renderizado com Three.js, iluminação com rim lights cyan/laranja e rotação de câmera via mouse e giroscópio
+- **Cena 3D interativa** — modelo de mountain bike renderizado com Three.js, iluminação com rim lights cyan/laranja e controle de câmera via mouse e giroscópio
 - **Post-processing cinematográfico** — ACES Filmic tone mapping, Unreal Bloom e SMAA antialiasing via EffectComposer
-- **Skydome animado** — fundo panorâmico girando continuamente para dar vida à cena
+- **HDRI environment** — mapa panorâmico girando continuamente como fundo e source de reflexos nos materiais metálicos
+- **Layout responsivo** — enquadramento adaptativo para mobile, tablet e desktop com câmera posicionada dinamicamente
 - **Customizador de bike** — seleção de componentes com especificações técnicas (suspensão, freios, câmbio, rodas)
-- **Trilhas** — listagem de 6 trilhas com sistema de filtro por dificuldade (Iniciante / Intermediário / Expert)
+- **Trilhas** — listagem de 6 trilhas com filtro por dificuldade (Iniciante / Intermediário / Expert)
 - **Estatísticas** — 50+ trilhas, 10K+ riders, 2000m de vertical, 25+ eventos pro
 
 ---
@@ -45,13 +46,15 @@ npm install
 ## Scripts
 
 ```bash
-npm run dev          # Servidor de desenvolvimento (com acesso em rede)
+npm run dev          # Servidor de desenvolvimento HTTPS (acessível na rede local)
 npm run build        # Build de produção com type-check
 npm run preview      # Preview do build local
 npm run type-check   # Validação TypeScript
 npm run lint         # ESLint com auto-fix
 npm run format       # Formatação com Prettier
 ```
+
+> **Nota:** o servidor de dev sobe com HTTPS via certificado auto-assinado (`@vitejs/plugin-basic-ssl`). Ao acessar pelo celular, aceite o aviso de segurança do browser para que o giroscópio funcione.
 
 ---
 
@@ -61,50 +64,43 @@ npm run format       # Formatação com Prettier
 src/
 ├── components/
 │   ├── home/
-│   │   ├── HeroSection.vue        # Cena 3D principal
-│   │   ├── CustomizeBike.vue      # Customizador de componentes
+│   │   ├── HeroSection.vue        # Cena 3D principal, câmera e iluminação
+│   │   ├── CustomizeBike.vue      # Customizador de componentes da bike
 │   │   ├── TrailHighlights.vue    # Listagem de trilhas com filtro
 │   │   └── StatsSection.vue       # Métricas e estatísticas
-│   ├── ui/
-│   │   └── TrailCard.vue
-│   └── controllers/
-│       └── ObjectController.vue   # Painel de debug para objetos 3D
+│   └── ui/
+│       └── TrailCard.vue          # Card individual de trilha
 ├── composables/
-│   └── sceneManager.ts            # Wrapper reativo em torno de THREE.Scene
+│   └── sceneManager.ts            # Wrapper em torno de THREE.Scene
 ├── libs/
 │   └── threejs/
 │       ├── core/
-│       │   └── engine3d.ts        # Loop de animação e ciclo de vida da engine
-│       ├── entities/              # ECS: Entity, Transform, Graphic, Physic
-│       ├── interfaces/
-│       │   └── stage_interface.ts
-│       ├── objects/               # Loaders de modelos GLB
-│       └── scenes/
-│           └── stage1.ts
+│       │   └── engine3d.ts        # Loop de animação (rAF) e ciclo de vida
+│       └── objects/               # Loaders de modelos GLB
+│           ├── bike/
+│           └── terrain2/
 ├── types/                         # Trail, TrailDifficulty
-├── views/
-│   └── HomePage.vue
-└── router/
-    └── index.ts
+├── assets/
+│   └── main.css                   # Tema e variáveis de cor (Tailwind @theme)
+└── views/
+    └── HomePage.vue               # Composição das seções da landing page
 ```
 
 ---
 
 ## Arquitetura 3D
 
-### Engine (ECS)
+### Engine
 
-O engine 3D usa um padrão **Entity Component System** customizado:
+O `Engine3d` gerencia o loop de animação via `requestAnimationFrame` e o ciclo de vida do renderer. Expõe um callback `onFrame` para lógica customizada por frame (controles, post-processing, animações):
 
 ```
 Engine3d (rAF loop)
-└── Entity
-    ├── TransformationComponent  — position / rotation / scale
-    ├── GraphicComponent         — Three.js Object3D + sync com transform
-    └── PhysicComponent          — simulação de velocidade linear
+└── onFrame callback
+    ├── OrbitControls.update()
+    ├── backgroundRotation (HDRI girando)
+    └── EffectComposer.render()
 ```
-
-O `Engine3d` expõe um callback `onFrame` para lógica customizada por frame (controles, composer, animações).
 
 ### Pipeline de renderização
 
@@ -123,28 +119,40 @@ RenderPass → UnrealBloomPass → OutputPass (ACES) → SMAAPass
 
 | Luz | Cor | Função |
 |---|---|---|
-| Key light | `#d0e8ff` branco-frio | Iluminação base, shadow map 2048px |
+| Key light | `#d0e8ff` branco-frio | Iluminação base com shadow map 2048px |
 | Rim cyan | `#00e5ff` | Contorno elétrico por trás-esquerda |
 | Rim laranja | `#ff5500` | Contra-rim quente por trás-direita |
 | Fill | `#1a3060` azul escuro | Evita sombras 100% pretas |
+
+### Câmera responsiva
+
+A posição da câmera é ajustada dinamicamente via `lerp` no evento de resize:
+
+| Breakpoint | Comportamento |
+|---|---|
+| `< 768px` | Texto no topo, bike enquadrada na metade inferior |
+| `768–1023px` | Tablet: mesma lógica do mobile, câmera mais próxima |
+| `≥ 1024px` | Desktop: bike à direita do texto, câmera interpolada até 1590px |
 
 ---
 
 ## Assets 3D
 
-| Arquivo | Tamanho | Descrição |
-|---|---|---|
-| `mountain_bike.glb` | 16.5 MB | Modelo principal da bike |
-| `cliff.glb` | 23 MB | Terreno/penhasco |
-| `landscape1.jpg` | — | Textura do skydome rotacionando |
+| Arquivo | Descrição |
+|---|---|
+| `mountain_bike.glb` | Modelo principal da bike |
+| `cliff.glb` | Terreno/penhasco |
+| `environment.hdr` | HDRI panorâmico para fundo e reflexos |
+| `landscape1.jpg` | Fallback de fundo caso o HDRI não carregue |
 
 ---
 
 ## Paleta de cores
 
-| Token | Hex | Uso |
+| Token | Valor | Uso |
 |---|---|---|
-| Cyan | `#22d3ee` | Cor primária da brand, CTAs, destaques |
-| Green | `#4ade80` | Gradientes, secundário |
+| Primary (cyan) | `rgb(0, 211, 242)` | Cor primária da brand, CTAs, destaques |
+| Black Light | `#0f1523` | Background de cards e painéis |
+| Black Light 2 | `#1f2837` | Background secundário |
+| Green | `#4ade80` | Gradientes, dificuldade iniciante |
 | Orange | `#fb923c` | Acento de velocidade/adrenalina |
-| Black | `#000000` | Background principal |
